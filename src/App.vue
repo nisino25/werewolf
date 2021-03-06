@@ -1,8 +1,6 @@
 <template>
-  <!-- <div v-for="message in messages" :key="message.key">
-    <p>{{message.username}}</p>
-    <h3>{{message.content}}</h3>
-  </div> -->
+
+
   <div v-if="currentMenu === 'register'">
     <form @submit.prevent="register()">
       <input placeholder="Type your username..." v-model="username">
@@ -14,8 +12,8 @@
 
   <div v-if="currentMenu === 'menu'">
     <h5>Welcome, {{username}}</h5>
-    <button @click="currentMenu = 'online'">play online</button>
-    <button @click="localProcess()" >play against CPUs</button>
+    <button @click="currentMenu = 'online'">Play online</button>
+    <button @click="localProcess()" >Play with one device</button>
     
   </div>
 
@@ -24,10 +22,24 @@
     <div v-if="localMenu === 'rule'">
       Are you ready, {{username}}?
       <hr>
-      <!-- decide the number of players -->
-      <h4>Number of players(4-10)</h4>
-      <input type="number" v-model="numOfPlayer">
+      <div>
+        <!-- decide the number of players -->
+        <p>Number of players(4-10)</p>
+        <input type="number" v-model="numOfPlayer" style="width:10%; margin-right: auto;
+        margin-left: auto; text-align:center">
+      </div>
+      
       <hr>
+      <div class='roleselection'>
+        <div class='container' v-for="(role,i) in rolesList.default" :key="i">
+          <!-- default roles  -->
+          <div v-if="i<10" >
+            <img :src="role.imgLink"  style="width: 75px; margin-top:5px">
+            <span>{{role.name}}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- decide the role -->
 
     </div>
@@ -41,6 +53,7 @@
 <script>
 import db from './db';
 import 'firebase/firestore';
+import { rolesList } from './const/roles.js'
 
 export default {
   data(){
@@ -49,6 +62,8 @@ export default {
       currentMenu: 'register',
       localMenu: 'rule',
       username: '',
+      
+      rolesList,
 
       numOfPlayer: 4,
     }
@@ -74,6 +89,8 @@ export default {
     skip(){
       this.currentMenu= 'local'
       this.username = 'hectoer'
+      this.numOfPlayer = 7
+
     },
 
 
@@ -88,11 +105,12 @@ export default {
 
     localProcess(){
       this.currentMenu = 'local'
-    }
+    },
   },
 
   mounted(){
     // this.refresh()
+    console.log(this.rolesList)
   }
 }
 </script>
@@ -104,6 +122,36 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 40px;
 }
+.container{
+  /* display: flex; */
+}
+
+.container div {
+  float: left;
+  /* display: flex; */
+  font-size: 60%;
+  /* position: absolute; */
+  width: 22%;
+  /* top: 20px; */
+  height:100px;
+  /* margin-top: 50px; */
+  /* width: 60em; */
+  /* background-color: #304455; */
+  border: solid 1px black;
+  margin-right: 1%;
+  margin-left: 1%;
+  margin-bottom: 3%;
+   position: relative;
+}
+.container div span{
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  color: red
+}
+
+
 </style>
