@@ -12,7 +12,9 @@
   </div>
 
   <div v-if="currentMenu === 'menu'">
+    <p>{{currentMenu}}</p>
     <h5>Welcome, {{username}}</h5>
+
     <button @click="currentMenu = 'online'">Play online</button>
     <button @click="localProcess()" >Play with one device</button>
     
@@ -113,21 +115,23 @@
         
       </div>
 
-      <div v-if="!readyToPlay" style="clear:both ">
+      <div v-if="!readyToPlay && winnerTeam === ''" style="clear:both ">
         
         <button @click="assignRoles">Assign roooles</button>
         
         <br><br>
         <button  @click="startGame()">Ready</button>
       </div>
+      <div v-if="winnerTeam !== ''">
+      </div>
 
       <div v-else style="clear:both;">
         
         <p>It is {{timeCondition}} time of day {{gameData.days.length}}</p>
-        <p>hye</p>
+        <!-- <p>{{isAnnouncing}}</p> -->
         <hr>
 
-        <div v-if="!isAnnouncing">
+        <div v-if="!isAnnouncing && readyToPlay">
           <p v-if="timeCondition === 'Night'">{{currentPlayer.name}}'s turn. Roll: {{currentPlayer.roll}}</p>
 
           <div v-if="timeCondition === 'Day'">
@@ -142,15 +146,16 @@
           
         
           <p v-if="selectingPlayer && timeCondition === 'Night'">Choose Your target</p>
-          <p v-if="!selectingPlayer && currentPlayer.killTarget !== ''">Your target is {{this.gameData.players[currentPlayer.killTarget].name}}</p>
+          <p v-if="!selectingPlayer && currentPlayer.killTarget !== '' && timeCondition === 'Night'">Your target is {{this.gameData.players[currentPlayer.killTarget].name}}</p>
           
           <!-- <p>{{gameData.players.lengtn}}</p> -->
           <br>
-          <button @click="nextTurn()" v-if="timeCondition === 'Night' && readyToFinishTurn">Finish your turn</button>
-          <button style="margin-left: 20px" @click="selectOne()" v-if="currentPlayer.roll === 'Werewolf' && timeCondition === 'Night' && currentPlayer.killTarget !== '' ">Change yourt target</button>
+          <button @click="nextTurn()" v-if="timeCondition === 'Night' && readyToFinishTurn">Confirm</button>
+          <button style="margin-left: 10px" @click="selectOne()" v-if="currentPlayer.roll === 'Werewolf' && timeCondition === 'Night' && currentPlayer.killTarget !== '' ">Change yourt target</button>
 
-          <button @click="nextTurn()" v-if="timeCondition === 'Day' && !isAnnouncing && readyToFinishVote">Finish your turn</button>
-          <button style="margin-left: 20px" @click="selectingPlayer = true" v-if="!selectingPlayer&& timeCondition === 'Day'">Change yourt votes</button>
+          <button @click="nextTurn()" v-if="timeCondition === 'Day' && !isAnnouncing && readyToFinishVote">Confirm</button>
+          
+          <button style="margin-left: 5px" @click="selectingPlayer = true" v-if="!selectingPlayer&& timeCondition === 'Day'">Change yourt votes</button>
 
         </div>
 
@@ -158,17 +163,29 @@
       
 
        <div v-if="isAnnouncing">
+         <!-- <p>{{attackTargetedList}}</p> -->
         <div v-for="(list,i) in attackTargetedList" :key="i">
           <p>{{gameData.players[list.targetIndex].name}} was killed </p>
+          <p>{{gameData.players[list.targetIndex].name}} was {{gameData.players[list.targetIndex].roll}}</p>
 
         </div>
         
         <button @click="isAnnouncing= flase; selectingPlayer = true" v-if="timeCondition === 'Day' && isAnnouncing">Move to day time</button>
-        <button @click="isAnnouncing= flase" v-if="timeCondition === 'Day' && isAnnouncing && voted">Move to night time</button>
+
+        <!-- <p>{{voted}}</p> -->
+
+        <p v-if="timeCondition === 'Night' && isAnnouncing && voted">{{announcingMessage}}</p>
+        <button @click="isAnnouncing= flase" v-if="timeCondition === 'Night' && isAnnouncing && voted">Move to night time</button>
        </div>
-       
+
+      
        <!-- <p>{{attackTargetedList}}</p> -->
       </div>
+      
+      <div v-if="winnerTeam !== ''" style="clear:both;">
+        <p>{{winnerTeam}} won!</p>
+      </div>
+       
 
     </div>
 
@@ -191,7 +208,9 @@ export default {
     return {
       messages: null,
       currentMenu: 'register',
+      // currentMenu: 'local',
       localMenu: 'rule',
+      // localMenu: 'predemo',
       username: '',
       
       rolesList,
@@ -205,6 +224,8 @@ export default {
       readyToPlay: false,
       selectingPlayer: false,
       isAnnouncing: false,
+      announcingMessage: '',
+      winnerTeam: '',
 
       
 
@@ -266,8 +287,15 @@ export default {
       return list
     },
     currentPlayer(){
-      let Index = this.gameData.days[this.gameData.days.length-1].currentPlayersIndex
-      return this.gameData.players[Index]
+      if(this.readyToPlay){
+        let Index = this.gameData.days[this.gameData.days.length-1].currentPlayersIndex
+        return this.gameData.players[Index]
+
+      }else{
+
+        return this.gameData.players[0]
+      }
+        
     },
     currentIndex(){
       return this.gameData.days[this.gameData.days.length-1].currentPlayersIndex
@@ -290,12 +318,22 @@ export default {
       // return 'hey'/
     },
     voted(){
-      let list= this.gameData.days[this.gameData.days.length-1]
-      if(list.voteFinished){
-        return true
+      let list= this.gameData.days[this.gameData.days.length-2]
+      if(this.timeCondition === 'Night'){
+        if(list.voteFinished){
+          return true
+        }else{
+          return false
+        }
       }else{
-        return false
+        list= this.gameData.days[this.gameData.days.length-1]
+        if(list.voteFinished){
+          return true
+        }else{
+          return false
+        }
       }
+      
 
 
     },
@@ -428,12 +466,16 @@ export default {
       this.numOfPlayer = 7
     },
     oniSkip(){
+      console.log('ehuh')
       this.currentMenu= 'local'
       this.username = 'hectoer'
       this.practice();
       this.localMenu = 'predemo'
 
       this.assignRoles()
+      console.log('howbaboutiub')
+      console.log(this.currentMenu)
+
 
     },
 
@@ -672,9 +714,11 @@ export default {
 
       if(this.PercentageOfWerewolf > 50){
         this.readyToPlay = false
+        this.winnerTeam = 'Werewolf'
         alert('The game is over. Werewolf Won')
       }else if(this.PercentageOfWerewolf === 0){
         this.readyToPlay = false
+        this.winnerTeam = 'Village'
         alert('The game is over. Village Won!')
       }
 
@@ -725,7 +769,7 @@ export default {
       let comparison = 0
       let legit = true;
       let theIndex  = '';
-      console.log(this.votedList[3].voteCount)
+      // console.log(this.votedList[3].voteCount)
       while(count < this.votedList.length){
         if(this.votedList[count].voteCount > comparison){ 
           theIndex = count
@@ -739,25 +783,40 @@ export default {
       }
 
       if(theIndex === ''){
-        alert('No one voted')
+        this.announcingMessage ='No one voted'
         return
       }
       
       let theNum = this.votedList[theIndex].voteCount
-      if(theNum > halfNum){
+      this.isAnnouncing = true
+      this.gameData.days[this.gameData.days.length -2].voteFinished = true
+      if(theNum >= halfNum){
         if(legit){
-          alert('execgtuin'+ ` ${this.gameData.players[theIndex].name}`)
+          this.announcingMessage ='Village decided to kil'+ ` ${this.gameData.players[theIndex].name}. \n`
+          this.announcingMessage = this.announcingMessage + '\n' +  `${this.gameData.players[theIndex].name} was ${this.gameData.players[theIndex].roll}`
+          this.gameData.players[theIndex].isAlive = false
+          this.gameData.players[theIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5' 
         }else{
-          alert('tie vote!, couldnot decide')
+          this.announcingMessage ='tie vote!, couldnot decide'
         }
       }else{
         if(theNum !== 0){
-          alert(`Didn't get enough: ` + `${halfNum}`)
+          this.announcingMessage =`Didn't get enough: ` + `${halfNum}`
         }
       }
 
-      
-      // 2 3 3  4 3 4 3
+      // Check if the game should go on or not
+
+      if(this.PercentageOfWerewolf > 50){
+        this.readyToPlay = false
+        
+        this.winnerTeam = 'Werewolf'
+        alert('The game is over. Werewolf Won')
+      }else if(this.PercentageOfWerewolf === 0){
+        this.readyToPlay = false
+        this.winnerTeam = 'Village'
+        alert('The game is over. Village Won!')
+      }
 
 
 
