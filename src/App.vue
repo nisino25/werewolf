@@ -8,6 +8,8 @@
       <br>
       <button @click="skip()">Skip</button>
       <button @click="oniSkip()">Oni skip </button>
+
+      <!-- <p>{{rolesList.Village}}</p> -->
     </form>
   </div>
 
@@ -252,6 +254,17 @@
               </div>
             </div>
 
+            <!-- Medium  -->
+            <div v-if="currentPlayer.roll === 'Medium'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickMediium(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
             <!-- solo wolf  -->
             <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
               <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickPrey(i)">
@@ -348,6 +361,30 @@
                 </div>
               </div> 
             </div>
+
+            <!-- Medium  -->
+            <div v-if="currentPlayer.roll === 'Medium'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="reviveLog !== ''">{{reviveLog[reviveLog.length-1]}}</p>
+                <p v-if="currentPlayer.amountOfAbility === 0" style="color:red">You alredy used your ability</p>
+                <!-- <p> {{currentPlayer.amountOfAbility}}</p> -->
+                <!-- <p>hey</p> -->
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="currentPlayer.amountOfAbility !== 0 && hasAnyVillagTeamDied">Choose who you'd like to revive (Only once a game)</button>
+
+                <p v-if="!hasAnyVillagTeamDied">No one from village has died yet</p>
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+
 
             <!-- solo wolf  -->
             <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
@@ -485,11 +522,17 @@
             <p style="color:red">{{docLog}}</p>
           
           </div>
+
+
+          <!-- in case medium revive someone -->
+          <div v-for="(log,i) in reviveLog" :key="i" >
+            <p style="color:red"> {{log}} </p>
+          </div>
           
           
 
 
-          <button @click="isAnnouncing= flase; selectingPlayer = true, avengeLog = '', killSuccess = true" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
+          <button @click="isAnnouncing= flase; selectingPlayer = true, avengeLog = '', killSuccess = true, reviveLog = []" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
         </div>
 
 
@@ -561,6 +604,7 @@ export default {
       discovery: '',
       avengeLog: '',
       docLog: '',
+      reviveLog: [],
 
       limitSolo: 1,
       killSuccess: true,
@@ -842,11 +886,12 @@ export default {
           }
           break
         
-        // case 'Village':
-        //   return true
+        
+        // doctor or village just can finish without doing anything
       }
       return readyFlag 
     },
+
     readyToFinishVote(){
       let readyFlag = true;
       // switch(this.currentPlayer.roll){
@@ -917,11 +962,28 @@ export default {
       }
       return indexList
 
-    }
+    },
+
+    hasAnyVillagTeamDied(){
+      let flagFlag= false
+      let count =0
+      let listList = this.gameData.players
+
+      while(count < listList.length){
+        if(listList[count].team === 'Village' && !listList[count].isAlive){
+          flagFlag = true
+        }
+        count++
+      }
+
+      return flagFlag
+
+    },
 
 
 
   }, 
+
   methods:{
     refresh(){
 			db.database().ref('messages').on('value', snapshot => {
@@ -964,13 +1026,13 @@ export default {
       // this.localMenu = 'predemo'
       this.localMenu = 'role-Village'
       
-      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: '',});
-      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
-      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
-      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
-      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
-      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
-      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: ''});
+      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
+      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
+      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
+      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
+      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
+      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
 
       // console.log(this.gameData)
 
@@ -1004,6 +1066,8 @@ export default {
       this.gameData.players[IndexWolf].roll = randomWerewolf.name
       this.gameData.players[IndexWolf].team = randomWerewolf.team
       this.gameData.players[IndexWolf].imgLink = randomWerewolf.imgLink
+      this.gameData.players[IndexWolf].amountOfAbility= 1
+      
       this.gameData.players[IndexWolf].killTarget = '' 
       this.gameData.players[IndexWolf].votingFor = '' 
 
@@ -1017,6 +1081,7 @@ export default {
       this.gameData.players[IndexVillage].imgLink = randomVillager.imgLink
       this.gameData.players[IndexVillage].killTarget = ''
       this.gameData.players[IndexVillage].votingFor = '' 
+      this.gameData.players[IndexVillage].amountOfAbility= 1
 
     },
     assignRoles(){
@@ -1061,6 +1126,7 @@ export default {
           this.gameData.players[i].roll = randomCharcter.name
           this.gameData.players[i].team = randomCharcter.team
           this.gameData.players[i].imgLink = randomCharcter.imgLink
+          this.gameData.players[i].amountOfAbility = 1
           this.gameData.players[i].killTarget = ''
           this.gameData.players[i].votingFor = '' 
         }  
@@ -1159,6 +1225,8 @@ export default {
           this.executeDayActions()
 
           this.selectingPlayer = false
+          this.isAnnouncing = true;
+          this.gameData.days[Index].voteFinished = true;
           // if(this.currentPlayer.roll === 'Werewolf'){
           //   this.selectingPlayer = true
           // }
@@ -1177,6 +1245,7 @@ export default {
             this.gameData.days[Index].voteFinished = true;
 
             this.gameData.days.push({Nightactions: [], currentPlayersIndex: 0, isNightOver: false, isDayOver: false});
+            this.isAnnouncing = true;
 
             // this.gameData.days[Index].currentPlayersIndex =0
             // this.selectingPlayer = false
@@ -1559,6 +1628,7 @@ export default {
       this.currentMenu = 'local'
     },
 
+
     clickPrey(i){
       if(!this.selectingPlayer){
         return
@@ -1644,7 +1714,6 @@ export default {
       }
       this.selectingPlayer = false
     },
-    
     clickAvenge(i){
       if(!this.selectingPlayer){
         return
@@ -1671,7 +1740,6 @@ export default {
 
       this.selectingPlayer = false
     },
-
     clickDoctor(i){
       if(!this.selectingPlayer){
         return
@@ -1694,6 +1762,45 @@ export default {
 
 
       this.gameData.players[this.currentIndex].protecting= i 
+      
+
+      this.selectingPlayer = false
+    },
+
+    clickMediium(i){
+      if(!this.selectingPlayer && (this.currentPlayer.amountOfAbility === 0)){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(targetCanditate.isAlive){
+        this.selectingPlayer = false
+        alert(`You have to choose a dead player`)
+        return
+      }
+      if(targetCanditate.team === 'Werewolf' && targetCanditate.team === 'Solo'){
+        alert(`You can't revive a player from  wolf or solo team`)
+        return
+      }
+
+
+      let r= confirm(`Would you like to revive [ ${targetCanditate.name} ] ?`);
+      if(!r){
+        return;
+      }
+
+
+      this.gameData.players[this.currentIndex].amountOfAbility = this.gameData.players[this.currentIndex].amountOfAbility -1
+      this.gameData.players[i].isAlive = true
+
+      // get the img back
+      let count =0
+      while(count < this.rolesList.Village.length){
+        if(this.rolesList.Village[count].name === this.gameData.players[i].roll)
+        this.gameData.players[i].imgLink = this.rolesList.Village[count].imgLink
+        count++ 
+      }
+      // this.gameData.players[i].imgLink = 
+      this.reviveLog.push( `Medium revived ${this.gameData.players[i].name} !`)
       
 
       this.selectingPlayer = false
@@ -1852,7 +1959,7 @@ export default {
 
 .selectingPlayer{
   /* background-color: blue; */
-  opacity: 0.3;
+  opacities: 0.3;
 }
 
 
