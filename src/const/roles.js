@@ -7,9 +7,9 @@ export const  rolesList = {
 
 
 rolesList.Village.push({name: 'Villager', avialblity: true, imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/5/58/Villager.png/revision/latest/scale-to-width-down/620?cb=20190629192110'});
-rolesList.Village.push({name: 'Seer', avialblity: false, imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/e/ee/Seer.png/revision/latest/scale-to-width-down/620?cb=20190703173445'});
-rolesList.Village.push({name: 'Doctor', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/8/87/Doctor_Protect.png/revision/latest/scale-to-width-down/1000?cb=20201205213327'});
-rolesList.Village.push({name: 'Avenger', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/b/be/Avenger_selection_marker.png/revision/latest/scale-to-width-down/1000?cb=20190701034125'});
+rolesList.Village.push({name: 'Seer', avialblity: true, imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/e/ee/Seer.png/revision/latest/scale-to-width-down/620?cb=20190703173445'});
+rolesList.Village.push({name: 'Doctor', avialblity: true,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/6/6c/Doctor.png/revision/latest/scale-to-width-down/307?cb=20200406140632'});
+rolesList.Village.push({name: 'Avenger', avialblity: true,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/5/5c/Avenger.png/revision/latest/scale-to-width-down/345?cb=20190701111701'});
 rolesList.Village.push({name: 'Witch', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/e/e6/Witch.png/revision/latest/scale-to-width-down/424?cb=20200404212803'});
 rolesList.Village.push({name: 'Bodyguard', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/8/87/Bodyguard.png/revision/latest/scale-to-width-down/343?cb=20190704172423'});
 rolesList.Village.push({name: 'Tough Guy', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/b/b8/Tough_Guy.png/revision/latest/scale-to-width-down/620?cb=20190701111741'});
@@ -17,7 +17,7 @@ rolesList.Village.push({name: 'Gunner', avialblity: false,imgLink: 'https://stat
 rolesList.Village.push({name: 'Jailer', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/3/3a/Jailer.png/revision/latest/scale-to-width-down/384?cb=20180427142746'});
 rolesList.Village.push({name: 'Red Lady', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/9/9c/Red_Lady.png/revision/latest/scale-to-width-down/842?cb=20190630203455'});
 rolesList.Village.push({name: 'Priest', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/1/14/Priest.png/revision/latest/scale-to-width-down/410?cb=20190704063322'});
-rolesList.Village.push({name: 'Aura Seer', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/2/2b/Aura_Seer.png/revision/latest/scale-to-width-down/620?cb=20190630081625'});
+rolesList.Village.push({name: 'Aura Seer', avialblity: true,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/2/2b/Aura_Seer.png/revision/latest/scale-to-width-down/620?cb=20190630081625'});
 rolesList.Village.push({name: 'Sprit Seer', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/7/73/Spirit_Seer.png/revision/latest/scale-to-width-down/425?cb=20190630081905'});
 rolesList.Village.push({name: 'Detective', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/2/2c/Detective_Magnifying_Glass.png/revision/latest/scale-to-width-down/132?cb=20200912154659'});
 rolesList.Village.push({name: 'Medium', avialblity: false,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/9/96/Medium.png/revision/latest/scale-to-width-down/375?cb=20180427142746'});

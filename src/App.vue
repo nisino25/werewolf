@@ -93,111 +93,442 @@
     </div>
 
 
+    <div v-if="localMenu === 'predemo' && !isPlaying" >
 
-
-
-
-    <div v-if="localMenu === 'predemo'">
       <div class='roleselection' >
-        
         <div class='container' v-for="(player,i) in gameData.players" :key="i">
-          <!-- Village roles  -->
-          <div class="player-card"  :class="[(player.isAlive ? '': 'dead'),(player.team === 'Village'? 'border-black': ''),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Solo'? 'border-green': ''),(selectingPlayer && player.name !== currentPlayer.name? 'selectingPlayer': '')] " @click="clickThePlayer(i)">
-            <img :src="player.imgLink" style="width: 60px; margin-top:5px" v-if="timeCondition === 'Night' || isAnnouncing">
-            <span style="width: 60px; margin-top:5px; font-size: 300%" v-else>
-              {{votedList[i].voteCount}}
-            </span>
+            <!-- Village roles  -->
+            <div class="player-card"  :class="[(player.isAlive ? '': 'dead'),(player.team === 'Village'? 'border-black': ''),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Solo'? 'border-green': ''),(selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': '')] " @click="clickThePlayer(i)">
 
-            <span class='player-name'>{{player.name}}:</span>
-            <span class='player-roll'>{{player.roll}}</span>
-          </div>
+              <img :src="player.imgLink" style="width: 60px; margin-top:5px" v-if="(timeCondition === 'Night' || isAnnouncing) || (player.teamm === 'Werewolf' && aliveWerewolfNum === 1 && timeCondition === 'Night')">
+
+
+              <!-- chansge into voting style if there are multiple  -->
+              <span style="width: 60px; margin-top:5px; font-size: 300%" v-if="timeCondition === 'Night' && !isAnnouncing && currentPlayer.team === 'Werewolf' && aliveWerewolfNum >1   ">
+                {{PreyCandidatesList[i].voteCount}}
+              </span>
+
+              <span style="width: 60px; margin-top:5px; font-size: 300%" v-if="timeCondition === 'Day' && !isAnnouncing">
+                {{votedList[i].voteCount}}
+              </span>
+
+              <span class='player-name'>{{player.name}}:</span>
+              <span class='player-roll'>{{player.roll}}</span>
+            </div>
         </div>
         
       </div>
 
-      <div v-if="!readyToPlay && winnerTeam === ''" style="clear:both ">
-        
-        <button @click="assignRoles">Assign roooles</button>
-        
-        <br><br>
-        <button  @click="startGame()">Ready</button>
-      </div>
-      <div v-if="winnerTeam !== ''">
-      </div>
+      <div >
 
-      <div v-else style="clear:both;">
-        
-        <p>It is {{timeCondition}} time of day {{gameData.days.length}}</p>
-        <!-- <p>{{isAnnouncing}}</p> -->
-        <hr>
+        <div v-if="!readyToPlay && winnerTeam === ''" style="clear:both ">
+          
+          <button @click="assignRoles">Assign roooles</button>
+          
+          <br><br>
+          <button  @click="startGame()">Ready</button>
+        </div>
+        <div v-if="winnerTeam !== ''">
+        </div>
 
-        <div v-if="!isAnnouncing && readyToPlay">
-          <p v-if="timeCondition === 'Night'">{{currentPlayer.name}}'s turn. Roll: {{currentPlayer.roll}}</p>
+        <div v-else style="clear:both;">
+          
+          <!-- <p>It is {{timeCondition}} time of day {{gameData.days.length}}</p> -->
+          <!-- <p>{{isAnnouncing}}</p> -->
+          <hr>
 
-          <div v-if="timeCondition === 'Day'">
-            <p v-if="selectingPlayer"> {{currentPlayer.name}}'s turn to vote.</p>
-            <p v-if="selectingPlayer">Vote for Somebody by tapping the player</p>
-            <p v-if="selectingPlayer">or</p>
-            <p v-if="!selectingPlayer">{{currentPlayer.name}}'s voting for {{this.gameData.players[currentPlayer.votingFor].name}} </p>
-            <button  @click="skipVote">Skip Votings</button>
+          <div v-if="!isAnnouncing && readyToPlay">
+            <p v-if="timeCondition === 'Night'">{{currentPlayer.name}}'s turn. Roll: {{currentPlayer.roll}}</p>
+
+            <div v-if="timeCondition === 'Day'">
+              <p v-if="selectingPlayer"> {{currentPlayer.name}}'s turn to vote.</p>
+              <p v-if="selectingPlayer">Vote for Somebody by tapping the player</p>
+              <p v-if="selectingPlayer">or</p>
+              <p v-if="!selectingPlayer">{{currentPlayer.name}}'s voting for {{this.gameData.players[currentPlayer.votingFor].name}} </p>
+              <button  @click="skipVote">Skip Votings</button>
+              
+              
+            </div>
+
             
+          
+            <p v-if="selectingPlayer && timeCondition === 'Night'">Choose Your target</p>
+            <p v-if="!selectingPlayer && currentPlayer.killTarget !== '' && timeCondition === 'Night'">Your target is {{this.gameData.players[currentPlayer.killTarget].name}}</p>
             
+            <!-- <p>{{gameData.players.lengtn}}</p> -->
+            <br>
+            <button @click="nextTurn()" v-if="timeCondition === 'Night' && readyToFinishTurn">Confirm</button>
+            <button style="margin-left: 10px" @click="selectOne()" v-if="currentPlayer.roll === 'Werewolf' && timeCondition === 'Night' && currentPlayer.killTarget !== '' ">Change yourt target</button>
+
+            <button @click="nextTurn()" v-if="timeCondition === 'Day' && !isAnnouncing && readyToFinishVote">Confirm</button>
+            
+            <button style="margin-left: 5px" @click="selectingPlayer = true" v-if="!selectingPlayer&& timeCondition === 'Day'">Change yourt votes</button>
+
+          </div>
+
+          
+        
+
+        <div v-if="isAnnouncing">
+          <!-- <p>{{attackTargetedList}}</p> -->
+          <div v-for="(list,i) in attackTargetedList" :key="i">
+            <p>{{gameData.players[list.targetIndex].name}} was killed </p>
+            <p>{{gameData.players[list.targetIndex].name}} was {{gameData.players[list.targetIndex].roll}}</p>
+
           </div>
           
-        
-          <p v-if="selectingPlayer && timeCondition === 'Night'">Choose Your target</p>
-          <p v-if="!selectingPlayer && currentPlayer.killTarget !== '' && timeCondition === 'Night'">Your target is {{this.gameData.players[currentPlayer.killTarget].name}}</p>
-          
-          <!-- <p>{{gameData.players.lengtn}}</p> -->
-          <br>
-          <button @click="nextTurn()" v-if="timeCondition === 'Night' && readyToFinishTurn">Confirm</button>
-          <button style="margin-left: 10px" @click="selectOne()" v-if="currentPlayer.roll === 'Werewolf' && timeCondition === 'Night' && currentPlayer.killTarget !== '' ">Change yourt target</button>
+          <button @click="isAnnouncing= flase; selectingPlayer = true" v-if="timeCondition === 'Day' && isAnnouncing">Move to day time</button>
 
-          <button @click="nextTurn()" v-if="timeCondition === 'Day' && !isAnnouncing && readyToFinishVote">Confirm</button>
-          
-          <button style="margin-left: 5px" @click="selectingPlayer = true" v-if="!selectingPlayer&& timeCondition === 'Day'">Change yourt votes</button>
+          <!-- <p>{{voted}}</p> -->
 
+          <p v-if="timeCondition === 'Night' && isAnnouncing && voted">{{announcingMessage}}</p>
+          <button @click="isAnnouncing= flase" v-if="timeCondition === 'Night' && isAnnouncing && voted">Move to night time</button>
         </div>
 
         
-      
-
-       <div v-if="isAnnouncing">
-         <!-- <p>{{attackTargetedList}}</p> -->
-        <div v-for="(list,i) in attackTargetedList" :key="i">
-          <p>{{gameData.players[list.targetIndex].name}} was killed </p>
-          <p>{{gameData.players[list.targetIndex].name}} was {{gameData.players[list.targetIndex].roll}}</p>
-
+        <!-- <p>{{attackTargetedList}}</p> -->
         </div>
         
-        <button @click="isAnnouncing= flase; selectingPlayer = true" v-if="timeCondition === 'Day' && isAnnouncing">Move to day time</button>
-
-        <!-- <p>{{voted}}</p> -->
-
-        <p v-if="timeCondition === 'Night' && isAnnouncing && voted">{{announcingMessage}}</p>
-        <button @click="isAnnouncing= flase" v-if="timeCondition === 'Night' && isAnnouncing && voted">Move to night time</button>
-       </div>
-
-      
-       <!-- <p>{{attackTargetedList}}</p> -->
+        <!-- <div v-if="winnerTeam !== ''" style="clear:both;">
+          <p>{{winnerTeam}} won!</p>
+        </div> -->
       </div>
-      
-      <div v-if="winnerTeam !== ''" style="clear:both;">
-        <p>{{winnerTeam}} won!</p>
-      </div>
-       
+
 
     </div>
 
-    
 
-    
+
+
+    <div v-if="isPlaying">
+      <small>It is {{timeCondition}} time of day {{this.gameData.days.length}}</small>
+
+      <div v-if="timeCondition === 'Night' && !isAnnouncing">
+
+        <div class='roleselection'>
+          <div class='container display-section' v-for="(player,i) in gameData.players" :key="i">
+
+            <!-- Villager roles  -->
+            <div v-if="currentPlayer.roll === 'Villager'">
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Village'? 'border-black': ''),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Solo'? 'border-green': '')] ">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px" >
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            <!-- seer and aura seer  -->
+            <div v-if="currentPlayer.roll === 'Seer' || currentPlayer.roll === 'Aura Seer'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickSeer(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            <!-- avenger  -->
+            <div v-if="currentPlayer.roll === 'Avenger'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickAvenge(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            <!-- Doctor  -->
+            <div v-if="currentPlayer.roll === 'Doctor'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickDoctor(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            <!-- solo wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickPrey(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px" >
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            <!-- multiple wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum > 1">
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickPrey(i)">
+
+                <img v-if="player.team === 'Werewolf' || !player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px">
+                <span v-if="player.team !== 'Werewolf' && player.isAlive" style="width: 60px; margin-top:5px; font-size: 300%" >
+                  {{PreyCandidatesList[i].voteCount}}
+                </span>
+                <!-- <img v-if="!player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px" > -->
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+            
+          </div>
+
+
+          <div style="clear:both;" class='action-section'>
+
+            <!-- Villager roles  -->
+            <div v-if="currentPlayer.roll === 'Villager'">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}}'s {{currentPlayer.roll}}</p>
+
+                <p>Trivia is going to be here</p>
+                <!-- <button @click="nextTurn()" v-if="readyToFinishTurn">Confirm</button> -->
+                <button @click="nextTurn()" v-if="readyToFinishTurn">Finish your turn </button>
+              </div>
+
+            </div>
+
+            <!-- seer, aura seer   -->
+            <div v-if="currentPlayer.roll === 'Seer' || currentPlayer.roll === 'Aura Seer'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="color:red">{{discovery}}</p>
+                
+                 <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn(), discovery = ''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Aveneg  -->
+            <div v-if="currentPlayer.roll === 'Avenger'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="color:red">Your target is {{gameData.players[ currentPlayer.dieWith].name}}</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  or
+                  <button @click="selectingPlayer = true" v-if="readyToFinishTurn">Change your target</button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Doctor  -->
+            <div v-if="currentPlayer.roll === 'Doctor'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="color:red">You are protecting {{gameData.players[ currentPlayer.protecting].name}}</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose who you'd like to protecte</button>
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  or
+                  <button @click="selectingPlayer = true" v-if="readyToFinishTurn">Change who you are protecting</button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- solo wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn">Your taret is: [ {{gameData.players[currentPlayer.killTarget].name}} ]</p>
+
+                
+                 <!-- change, choose someone, finish button  -->
+                 <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  <small style="margin-left:10px; margin-right:10px;">or</small> 
+                  <button @click="selectingPlayer = true">Change your target</button>
+        
+                </div>
+                
+              </div> 
+
+            </div>
+
+            <!-- multiple wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum > 1">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="margin-top:-10px">Your taret is: [ {{gameData.players[currentPlayer.killTarget].name}} ]</p>
+
+                <p>-------- Your werewolf teammate -----------</p>
+                <!-- <p>{{aliveWerewolfNum}}</p> -->
+                <div v-for="(aliveWolf,i) in IndexOfAliveWerewolf" :key="i">
+                  <div v-if="currentIndex !== aliveWolf">
+                    <p style="color:red">{{gameData.players[aliveWolf].name}}, as {{gameData.players[aliveWolf].roll}}.</p>
+                    <p v-if="gameData.players[aliveWolf].killTarget === ''">Current Target: Not selected yet</p>
+                    <p style="margin-top:-10px" v-else>Current Target: {{gameData.players[gameData.players[aliveWolf].killTarget].name}}</p>
+
+                  </div>
+
+                </div>
+                 <p style="margin-top:-10px">-----------------------------------------</p>
+
+
+                 <!-- change, choose someone, finish button  -->
+                 <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  <small style="margin-left:10px; margin-right:10px;">or</small> 
+                  <button @click="selectingPlayer = true">Change your target</button>
+        
+                </div>
+                
+              </div> 
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+      </div>
+
+
+
+      <div v-if="timeCondition === 'Day' && !isAnnouncing">
+        
+
+
+        <div class='container display-section' v-for="(player,i) in gameData.players" :key="i">
+            <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickVote(i)">
+
+              <span style="width: 60px; margin-top:5px; font-size: 300%" v-if="timeCondition === 'Day' && !isAnnouncing && player.isAlive">
+              <img v-if="!player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px" >
+              
+              {{votedList[i].voteCount}}
+              </span>
+              <img v-if="!player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px" >
+
+              <span class='player-name'>{{player.name}}:</span>
+              <span class='player-roll'>{{player.roll}}</span>
+            </div>
+          
+        </div>
+
+
+        <div style="clear:both;" class='action-section'>
+          <div style="clear:both;">
+            <p v-if="currentPlayer.votingFor !== ''">{{currentPlayer.name}}'s voting for {{gameData.players[currentPlayer.votingFor].name}}</p>
+            
+
+            <div v-if="currentPlayer.votingFor === ''">
+              <p>{{currentPlayer.name}}'s turn</p>
+              <p>Vote for somebody by clikcking the player</p>
+
+            </div>
+            
+
+
+            <div v-if="currentPlayer.votingFor !== ''">
+              <button @click="nextTurn()" >Finish your turn </button>
+              <small style="margin-left:10px; margin-right:10px;">or, change your vote</small> 
+            </div>
+
+            <button  @click="skipVote" style="margin-top:10px">Skip Votings</button>
+
+          </div>
+
+
+        </div>
+
+      </div>
+
+
+      <div v-if="isAnnouncing">
+
+        <div v-if="isAnnouncing && timeCondition === 'Day'">
+          <!-- <p>{{attackTargetedList}}</p> -->
+          <div v-if="killSuccess">
+            <div v-for="(list,i) in attackTargetedList" :key="i" >
+              <p  style="color:red">{{gameData.players[list.targetIndex].name}} was killed.</p>
+              <p  style="color:red">{{gameData.players[list.targetIndex].name}} was {{gameData.players[list.targetIndex].roll}}.</p>
+
+              <br>
+
+              <div v-if="avengeLog !== ''">
+                <p style="color:red">{{avengeLog}}</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div v-if="!killSuccess">
+            <p><strong>No one died last night</strong> </p>
+            <p style="color:red">{{docLog}}</p>
+          
+          </div>
+          
+          
+
+
+          <button @click="isAnnouncing= flase; selectingPlayer = true, avengeLog = '', killSuccess = true" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
+        </div>
+
+
+
+        <div v-if="isAnnouncing && timeCondition === 'Night'">
+          <p v-if="timeCondition === 'Night' && isAnnouncing && voted" style="color:red">{{announcingMessage}}</p>
+
+          <div v-if="avengeLog !== ''">
+              <p style="color:red">{{avengeLog}}</p>
+            </div>
+
+          <button @click="isAnnouncing= flase, avengeLog = ''" v-if="timeCondition === 'Night' && isAnnouncing && voted && winnerTeam === ''">Move to night time</button>
+        </div>
+
+      </div>
+
+
+
+
+
+      <!-- if the team wins -->
+      <div v-if="winnerTeam !== ''" style="clear:both; margin-top: 40px; color:red">
+          <p>{{winnerTeam}} won!</p>
+      
+      </div>
+    </div>
+
+
+
+
+
+
+
   </div>
 
+    
 
 
 </template>
-
 <script>
 import db from './db';
 import 'firebase/firestore';
@@ -226,6 +557,13 @@ export default {
       isAnnouncing: false,
       announcingMessage: '',
       winnerTeam: '',
+      isPlaying: false,
+      discovery: '',
+      avengeLog: '',
+      docLog: '',
+
+      limitSolo: 1,
+      killSuccess: true,
 
       
 
@@ -240,6 +578,7 @@ export default {
       numOfPlayer: 7,
     }
   },
+
   computed:{
     availableList(){
       let list =  {
@@ -369,12 +708,28 @@ export default {
       // return 100
     },
 
+
+    docsProtectingList(){
+      let count = 0
+      let listList = []
+      while(count < this.gameData.players.length){
+        if(this.gameData.players[count].isAlive){
+          if(this.gameData.players[count].protecting !== ''){
+            listList.push(this.gameData.players[count].protecting)
+          } 
+        }
+        count++
+      }
+      return listList
+    },
     attackTargetedList(){
       let list = this.gameData.players
       let updatedList = []
       let i =0;
       while(i < list.length){
         if(list[i].killTarget !== ''){
+          // so it will only have one data 
+          updatedList = []
           updatedList.push({targetIndex: list[i].killTarget, actorIndex: i})
         }
 
@@ -408,14 +763,84 @@ export default {
 
       return voteList
     },
+    PreyCandidatesList(){
+      let OGList = this.gameData.players
+      let canditateList = []
+      let i =0;
+      
+      // make a base list
+      while(i < OGList.length){
+        canditateList.push({originalIndex: i,  voteCount: 0})
+        i++
+      }
+
+      i = 0
+
+      while(i < OGList.length){
+        let theIndex =  OGList[i].killTarget
+        if(theIndex !== ''){
+          canditateList[theIndex].voteCount++
+        }
+        
+        
+        i++
+      }
+
+      return canditateList
+
+    },
+
 
     readyToFinishTurn(){
       let readyFlag = true;
       switch(this.currentPlayer.roll){
         case 'Werewolf':
           if(this.currentPlayer.killTarget === ''){
-            return readyFlag = false
+            readyFlag = false
           }
+          break
+        
+        case 'Seer':
+          if(this.discovery === ''){
+            readyFlag = false
+          }
+          break
+
+        case 'Aura Seer':
+          if(this.discovery === ''){
+            readyFlag = false
+          }
+          break
+
+        case 'Avenger':
+          // if(this.currentPlayer.roll !== 'Avenger'){
+          //   readyFlag = false
+          //   break
+          // }
+          if(this.currentPlayer.dieWith === ''){
+            readyFlag  =false
+            break
+          }
+          
+          if(!this.gameData.players[this.currentPlayer.dieWith].isAlive){
+            readyFlag = false
+          }
+          break
+        
+        case 'Doctor':
+          // if(this.currentPlayer.roll !== 'Avenger'){
+          //   readyFlag = false
+          //   break
+          // }
+          if(this.currentPlayer.protecting === ''){
+            readyFlag  =false
+            break
+          }
+          
+          if(!this.gameData.players[this.currentPlayer.protecting].isAlive){
+            readyFlag = false
+          }
+          break
         
         // case 'Village':
         //   return true
@@ -438,6 +863,62 @@ export default {
       }
       return readyFlag 
     },
+
+    adequentWerewolf(){
+      let theList = this.gameData.players
+      let Max = theList.length * 0.35
+      let i = 0;
+      let WerewolfCount = 0
+
+      while(i < theList.length){
+        if(theList[i].team === 'Werewolf'){
+          WerewolfCount++
+          // console.log(WerewolfCount)
+        }
+        i++
+      }
+
+      // Talking about the future, so plus one
+      if(WerewolfCount + 1 <= Max){
+        return false
+      }else{
+        return true
+      }
+
+    },
+    aliveWerewolfNum(){
+      let theList = this.gameData.players
+      // let Max = theList.length * 0.35
+      let i = 0;
+      let WerewolfCount = 0
+
+      while(i < theList.length){
+        if(theList[i].team === 'Werewolf' && theList[i].isAlive){
+          WerewolfCount++
+          // console.log(WerewolfCount)
+        }
+        i++
+      }
+      return WerewolfCount
+    },
+    IndexOfAliveWerewolf(){
+      let theList = this.gameData.players
+      // let Max = theList.length * 0.35
+      let i = 0;
+      // let WerewolfCount = 0
+      let indexList = []
+
+      while(i < theList.length){
+        if(theList[i].team === 'Werewolf' && theList[i].isAlive){
+          indexList.push(i)
+          // console.log(WerewolfCount)
+        }
+        i++
+      }
+      return indexList
+
+    }
+
 
 
   }, 
@@ -466,14 +947,14 @@ export default {
       this.numOfPlayer = 7
     },
     oniSkip(){
-      console.log('ehuh')
+      // console.log('ehuh')
       this.currentMenu= 'local'
       this.username = 'hectoer'
       this.practice();
       this.localMenu = 'predemo'
 
       this.assignRoles()
-      console.log('howbaboutiub')
+      // console.log('howbaboutiub')
       console.log(this.currentMenu)
 
 
@@ -483,15 +964,19 @@ export default {
       // this.localMenu = 'predemo'
       this.localMenu = 'role-Village'
       
-      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '',});
-      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '',});
-      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '',});
-      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '',});
-      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '',});
-      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '',});
-      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '',});
-      console.log(this.gameData)
+      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: '',});
+      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: '',});
+
+      // console.log(this.gameData)
+
+
     },
+
     assignFirst(){
       let i = 0
       while(i < this.gameData.players.length){
@@ -542,21 +1027,42 @@ export default {
       
 
       let i = 0
+      // console.log(`Players length: ${this.gameData.players.length}`)
+      // console.log(`Max of the wolf is: ${Math.floor(this.gameData.players.length * 0.35)}`)
       while(i < this.gameData.players.length){
+        
+        let randomCharcter = null
+        let randomIndex = null
         if(this.gameData.players[i].roll === '' ){
-          let charcter = this.availableList.characters.Village[0]
-          this.gameData.players[i].roll = charcter.name
-          this.gameData.players[i].team = charcter.team
-          this.gameData.players[i].imgLink = charcter.imgLink
+          let randomRandom = Math.floor(Math.random() * 101); 
+
+          // decide if they can have more werewolf
+          // if so, the next charcter will be a werewolf with the chance of 35%
+          if(!this.adequentWerewolf){
+            if(randomRandom >= 65){
+              // randomTeam = 'Werewolf'
+              randomIndex = this.getRandomIndex('Werewolf')
+              randomCharcter = this.availableList.characters.Werewolf[randomIndex]
+            }else{
+              randomIndex = this.getRandomIndex('Village')
+              randomCharcter = this.availableList.characters.Village[randomIndex]
+            }
+          }else{
+            randomIndex = this.getRandomIndex('Village')
+            randomCharcter = this.availableList.characters.Village[randomIndex]
+          }
+          // console.log(`${i}: ${randomCharcter.name}`)
+
+
+
+          // let randomIndex = this.getRandomIndex(randomTeam)
+          // let randomCharcter = this.availableList.characters.Village[randomIndex]
+
+          this.gameData.players[i].roll = randomCharcter.name
+          this.gameData.players[i].team = randomCharcter.team
+          this.gameData.players[i].imgLink = randomCharcter.imgLink
           this.gameData.players[i].killTarget = ''
           this.gameData.players[i].votingFor = '' 
-
-          // let randomIndexVillage = this.getRandomIndex('Village')
-          // let randomVillager = this.availableList.characters.Village[randomIndexVillage]
-
-          // this.gameData.players[i].roll = randomVillager.name
-          // this.gameData.players[i].team = randomVillager.team
-          // this.gameData.players[i].imgLink = randomVillager.imgLink
         }  
         // console.log(this.gameData.players[i].team)
         i++
@@ -564,16 +1070,16 @@ export default {
       // console.log(this.gameData)
 
 
-      
-      // For now I'm just going to assign everybody 
-
-
 
 
     },
     goWithThese(){
       this.localMenu='predemo'
+      // this.localMenu = 'Playing'
+      this.isPlaying = true
     },
+
+
 
     getRandomIndex(team){
       // console.log(team)
@@ -595,17 +1101,19 @@ export default {
       }
     },
     startGame(){
+      this.isPlaying = true
       this.readyToPlay = true
       this.gameData.days.push({Nightactions: [],voteFinished: false, currentPlayersIndex: 0, isNightOver: false, isDayOver: false});
 
-      if(this.currentPlayer.roll === 'Werewolf'){
-        this.selectingPlayer = true
-      }
+      // if(this.currentPlayer.roll === 'Werewolf'){
+      //   this.selectingPlayer = true
+      // }
       
 
     },
-
     nextTurn(){
+      this.discovery = ''
+      this.selectingPlayer
 
       let Index = this.gameData.days.length-1
       // if( this.timeCondition === 'Night'){ 
@@ -613,7 +1121,7 @@ export default {
         
         // let theNum = this.gameData.days[Index].currentPlayersIndex
         if(this.gameData.days[Index].currentPlayersIndex +1 >= this.gameData.players.length ){
-          console.log('over')
+          // console.log('over')
           this.isAnnouncing  = true; 
           this.gameData.days[Index].isNightOver = true;
           this.gameData.days[Index].currentPlayersIndex =0
@@ -622,9 +1130,9 @@ export default {
 
         }else{
           this.gameData.days[Index].currentPlayersIndex++
-          if(this.gameData.players[this.currentIndex].team === 'Werewolf'){
-            this.selectingPlayer = true
-          }
+          // if(this.gameData.players[this.currentIndex].team === 'Werewolf'){
+          //   // this.selectingPlayer = true
+          // }
 
            
         }
@@ -637,23 +1145,23 @@ export default {
             this.executeNightActions()
           }else{
             this.gameData.days[Index].currentPlayersIndex++
-            if(this.gameData.players[this.currentIndex].team === 'Werewolf'){
-              this.selectingPlayer = true
-            }
+            // if(this.gameData.players[this.currentIndex].team === 'Werewolf'){
+            //   this.selectingPlayer = true
+            // }
           }
         }
       }
       else if(this.gameData.days[Index].isNightOver){
         if(this.gameData.days[Index].currentPlayersIndex +1 >= this.gameData.players.length ){
-          console.log('obver')
+          // console.log('obver')
           this.gameData.days[Index].isDayOver= true;
           this.gameData.days.push({Nightactions: [], currentPlayersIndex: 0,voteFinished: false, isNightOver: false, isDayOver: false});
           this.executeDayActions()
 
           this.selectingPlayer = false
-          if(this.currentPlayer.roll === 'Werewolf'){
-            this.selectingPlayer = true
-          }
+          // if(this.currentPlayer.roll === 'Werewolf'){
+          //   this.selectingPlayer = true
+          // }
 
         }else{
           this.selectingPlayer = true
@@ -693,21 +1201,118 @@ export default {
       this.nextTurn()
     },
 
-
     executeNightActions(){
 
       // kill and protect
       // check if we have to continue the game or not
       // clear the target after that
-      let count = 0;
-      while(count < this.attackTargetedList.length){
-        let theIndex = this.attackTargetedList[count].targetIndex
-        console.log(`killing ${theIndex}`)
-        // this.gameData.players[theIndex].name= 'Dead'
-        this.gameData.players[theIndex].isAlive = false
-        this.gameData.players[theIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-        count++
+
+      
+      let ultimateIndex = null
+      let randomCanditaList = []
+
+      if(this.aliveWerewolfNum === 1){
+        // when there is only one werewolf left
+
+        // who is werewolf
+        let list = this.gameData.players
+        let listCount = 0
+        let lonleyWolf = null
+        while(listCount < list.length){
+          if(this.gameData.players[listCount].team === 'Werewolf'){
+            if(this.gameData.players[listCount].isAlive){
+              lonleyWolf = this.gameData.players[listCount]
+            }
+          }
+          listCount++
+        }
+        console.log('Just by yourself')
+        console.log('------')
+
+        ultimateIndex = lonleyWolf.killTarget
+      }else{
+        // in case of multiples wolves
+
+        let count = 0
+        let comparison = 0
+        let legit = true;
+        let HighIndex  = '';
+
+
+        while(count < this.PreyCandidatesList.length){
+          if(this.PreyCandidatesList[count].voteCount > comparison){ 
+            HighIndex = count
+            comparison =this.PreyCandidatesList[count].voteCount
+            legit = true
+            randomCanditaList = []
+            randomCanditaList.push(count)
+            
+          }else if (this.PreyCandidatesList[count].voteCount === comparison){
+            randomCanditaList.push(count)
+            legit = false
+          }
+          count++
+        }
+        
+        // let theNum = this.PreyCandidatesList[HighIndex].voteCount
+        // this.isAnnouncing = true
+        
+        if(legit){
+          console.log('highest got easy ')
+          console.log('------')
+          // when heighest vote getter is the onlu one
+          ultimateIndex = HighIndex
+        }else{
+          // when there is tie for the top
+          console.log('Tie vote for werewolf, going to random')
+          console.log(`top getters: ${randomCanditaList}`)
+          ultimateIndex = randomCanditaList[ Math.floor(Math.random() * randomCanditaList.length)] 
+          
+        }
+
       }
+
+      // exectue right herw
+      // let theIndex = this.attackTargetedList[ultimateIndex].targetIndex
+
+
+      if(this.docsProtectingList.includes(ultimateIndex)){
+        this.killSuccess = false
+        this.docLog = `Doctor successfully protect [ ${this.gameData.players[ultimateIndex].name} ] from Werewolf team!`
+      }else{
+        this.killSuccess = true
+          this.gameData.players[ultimateIndex].isAlive = false
+        this.gameData.players[ultimateIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+
+        let theAvenger = this.gameData.players[ultimateIndex]
+        let AvenegIndex= theAvenger.dieWith
+
+
+        if(theAvenger.roll === 'Avenger'){
+          if(this.gameData.players[AvenegIndex].isAlive){
+            this.gameData.players[AvenegIndex].isAlive = false
+            this.gameData.players[AvenegIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+            this.avengeLog = ''
+
+            this.avengeLog = `${theAvenger.name} killed ${this.gameData.players[AvenegIndex].name} ( ${this.gameData.players[AvenegIndex].roll} ) just before died.`
+
+          }
+        }
+      }
+
+
+
+      
+
+      // set all the targets for the werewolf so it will easy to access later
+      let wolfCount = 0
+      while(wolfCount < this.IndexOfAliveWerewolf.length){
+        this.gameData.players[wolfCount].killTarget = ultimateIndex
+        wolfCount++
+      }
+
+
+
 
 
       // If game should continue or not
@@ -722,20 +1327,10 @@ export default {
         alert('The game is over. Village Won!')
       }
 
-      // this.selectingPlayer = true
-
-
-      // this.isReadyToPlya = false
-
-      
-      // console.log(this.gameData.players[])
-
-
-      // clear the everybody' target
 
 
       // clearing the voting datas
-      count = 0
+      let count = 0
       while(count < this.gameData.players.length){
         this.gameData.players[count].votingFor = ''
         count++
@@ -743,9 +1338,10 @@ export default {
 
       
     },
+
     executeDayActions(){
       // first of all, if selecgting player is nececcasry or not
-      console.log('eveybody voted')
+      // console.log('eveybody voted')
 
       if(this.currentPlayer.roll === 'Werewolf'){
         this.selectingPlayer = true
@@ -796,6 +1392,23 @@ export default {
           this.announcingMessage = this.announcingMessage + '\n' +  `${this.gameData.players[theIndex].name} was ${this.gameData.players[theIndex].roll}`
           this.gameData.players[theIndex].isAlive = false
           this.gameData.players[theIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5' 
+
+
+          let theAvenger = this.gameData.players[theIndex]
+          let AvenegIndex= theAvenger.dieWith
+
+
+          if(theAvenger.roll === 'Avenger'){
+            if(this.gameData.players[AvenegIndex].isAlive){
+              this.gameData.players[AvenegIndex].isAlive = false
+              this.gameData.players[AvenegIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+              this.avengeLog = ''
+
+              this.avengeLog = `${theAvenger.name} killed ${this.gameData.players[AvenegIndex].name} ( ${this.gameData.players[AvenegIndex].roll} ) just before died.`
+
+            }
+          
+          }
         }else{
           this.announcingMessage ='tie vote!, couldnot decide'
         }
@@ -804,6 +1417,10 @@ export default {
           this.announcingMessage =`Didn't get enough: ` + `${halfNum}`
         }
       }
+
+
+
+
 
       // Check if the game should go on or not
 
@@ -857,6 +1474,8 @@ export default {
 
       
       // clear the all votes for at night section
+
+      this.selectingPlayer = false
 
     },
     
@@ -939,7 +1558,186 @@ export default {
     localProcess(){
       this.currentMenu = 'local'
     },
+
+    clickPrey(i){
+      if(!this.selectingPlayer){
+        return
+      }
+
+      let targetCanditate = this.gameData.players[i]
+
+      // chekck if it is not you or not, alert you cant target your self
+      // check if deat or same team or not
+      // 
+      
+      if(this.currentPlayer.name === targetCanditate.name){
+        alert('You cannot trarget yourself')
+        return 
+      }
+      if(!targetCanditate.isAlive ){
+        alert('You cannot target the dead player')
+        return 
+      }
+      if(targetCanditate.team === 'Werewolf' ){
+        alert('You cannot target the other werewolf')
+        return 
+      }
+
+      // let iCount =0
+
+      // while(iCount < this.IndexOfAliveWerewolf.length){
+      //   if(currentPlayersIndex === this.IndexOfAliveWerewolf){
+      //     iCount++
+      //   }else{
+
+
+      //     iCount++;
+      //   }
+      // }
+      
+
+      let r= confirm(`Is [ ${targetCanditate.name} ] your target?`);
+      if(!r){
+        return;
+      }
+
+      this.selectingPlayer  = false
+      this.gameData.players[this.currentIndex].killTarget = i;
+    },
+    clickSeer(i){
+      if(!this.selectingPlayer){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        alert(`Can't choose dead player`)
+        return
+      }
+      if(targetCanditate.name === this.currentPlayer.name){
+        alert(`Can't choose yourself`)
+        return
+      }
+
+
+      let r= confirm(`Would you like to check [ ${targetCanditate.name} ] ?`);
+      if(!r){
+        return;
+      }
+
+
+      switch(this.currentPlayer.roll){
+        case 'Seer':
+          this.discovery = `${targetCanditate.name} is ${targetCanditate.roll}`
+          break;
+
+        case 'Aura Seer':
+          if(targetCanditate.roll === 'Gunner' ||  targetCanditate.roll === 'Jailer' || targetCanditate.roll === 'Medium' ||  targetCanditate.roll === 'Witch' || targetCanditate.team === 'Solo' ){
+            this.discovery = `${targetCanditate.name} has Unknown aura`
+          }else if(targetCanditate.team === 'Village'){
+            this.discovery = `${targetCanditate.name} has Good aura`
+          }else if(targetCanditate.team === 'Werewolf'){
+            this.discovery = `${targetCanditate.name} has Evil aura`
+          }
+          break
+
+
+      }
+      this.selectingPlayer = false
+    },
     
+    clickAvenge(i){
+      if(!this.selectingPlayer){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        alert(`Can't choose dead player`)
+        return
+      }
+      if(targetCanditate.name === this.currentPlayer.name){
+        alert(`Can't choose yourself`)
+        return
+      }
+
+
+      let r= confirm(`Are you revenging on [ ${targetCanditate.name} ] when you die?`);
+      if(!r){
+        return;
+      }
+
+
+      this.gameData.players[this.currentIndex].dieWith = i 
+      
+
+      this.selectingPlayer = false
+    },
+
+    clickDoctor(i){
+      if(!this.selectingPlayer){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        alert(`Can't choose dead player`)
+        return
+      }
+      if(targetCanditate.name === this.currentPlayer.name){
+        alert(`Can't choose yourself`)
+        return
+      }
+
+
+      let r= confirm(`Would you like to protect [ ${targetCanditate.name} ] from Werewolf?`);
+      if(!r){
+        return;
+      }
+
+
+      this.gameData.players[this.currentIndex].protecting= i 
+      
+
+      this.selectingPlayer = false
+    },
+
+
+
+
+    clickVote(i){
+      let targetCanditate = this.gameData.players[i]
+      // console.log(i)
+
+      if(this.currentPlayer.name === targetCanditate.name){
+        alert('You cannot vote for yourself')
+        return 
+      }
+      if(!targetCanditate.isAlive ){
+        alert('You cannot vote for dead player')
+        return 
+      }
+      if(this.currentPlayer.team === 'Werewolf' &&  targetCanditate.team === 'Werewolf'){
+        let c= confirm(`Are you voting for the same werewolf [ ${targetCanditate.name} ] ?`);
+        if(!c){
+          return;
+        }else{
+          this.selectingPlayer  = false
+          this.gameData.players[this.currentIndex].votingFor = i;
+          return
+        }
+      }
+
+      let r= confirm(`Are you voting for [ ${targetCanditate.name} ] ?`);
+      if(!r){
+        return;
+      }
+
+      // this.selectingPlayer  = false 
+      this.gameData.players[this.currentIndex].votingFor = i;
+        
+    },
+    
+
+
+
   },
   watch:{
   },
@@ -952,7 +1750,6 @@ export default {
   }
 }
 </script>
-
 <style>
 
 #app {
@@ -961,7 +1758,7 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 40px;
+  margin-top: 15px;
 }
 
 
@@ -1018,15 +1815,15 @@ export default {
 .role-card span,
 .player-name{
   position: absolute;
-  bottom: 5px;
+  bottom: 18px;
   left: 0;
   right: 0;
-  color: red
+  color: black;
 }
 
 .player-roll{
   position: absolute;
-  bottom: 18px;
+  bottom: 5px;
   left: 0;
   right: 0;
   color: red
