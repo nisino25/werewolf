@@ -265,6 +265,20 @@
               </div>
             </div>
 
+            <!-- Fool -->
+            <div v-if="currentPlayer.roll === 'Fool'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " >
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+
+
+
             <!-- solo wolf  -->
             <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
               <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickPrey(i)">
@@ -379,6 +393,17 @@
                 <!-- <p>{{gameData.players[currentIndex]}}</p> -->
                 <br><br>
                 <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+
+            <!-- Fool  -->
+            <div v-if="currentPlayer.roll === 'Fool'">
+              <div style="clear:both;">
+                <div v-if="readyToFinishTurn">
+                  <p>{{currentPlayer.name}}'s {{currentPlayer.roll}}</p>
                   <button @click="nextTurn()" >Finish your turn </button>
                 </div>
               </div> 
@@ -980,6 +1005,21 @@ export default {
 
     },
 
+    SoloNum(){
+      let theList = this.gameData.players
+      let i = 0;
+      let count = 0
+
+      while(i < theList.length){
+        if(theList[i].team === 'Solo'){
+          count++
+          // console.log(WerewolfCount)
+        }
+        i++
+      }
+      return count
+    }
+
 
 
   }, 
@@ -1101,21 +1141,43 @@ export default {
         if(this.gameData.players[i].roll === '' ){
           let randomRandom = Math.floor(Math.random() * 101); 
 
+
           // decide if they can have more werewolf
           // if so, the next charcter will be a werewolf with the chance of 35%
-          if(!this.adequentWerewolf){
-            if(randomRandom >= 65){
-              // randomTeam = 'Werewolf'
-              randomIndex = this.getRandomIndex('Werewolf')
-              randomCharcter = this.availableList.characters.Werewolf[randomIndex]
-            }else{
-              randomIndex = this.getRandomIndex('Village')
-              randomCharcter = this.availableList.characters.Village[randomIndex]
-            }
+          if(randomRandom >= 80 && !this.adequentWerewolf){
+            randomIndex = this.getRandomIndex('Werewolf')
+            randomCharcter = this.availableList.characters.Werewolf[randomIndex]
+
+          }else if(randomRandom >= 65 && this.SoloNum < 1){
+            randomIndex = this.getRandomIndex('Solo')
+            randomCharcter = this.availableList.characters.Solo[randomIndex]
+
           }else{
             randomIndex = this.getRandomIndex('Village')
             randomCharcter = this.availableList.characters.Village[randomIndex]
           }
+
+
+          // if(!this.adequentWerewolf){
+          //   if(randomRandom >= 80){
+          //     // randomTeam = 'Werewolf'
+          //     randomIndex = this.getRandomIndex('Werewolf')
+          //     randomCharcter = this.availableList.characters.Werewolf[randomIndex]
+          //   }else{
+          //     if(this.limitSolo !== 0){
+
+          //     }else{
+          //       randomIndex = this.getRandomIndex('Village')
+          //       randomCharcter = this.availableList.characters.Village[randomIndex]
+          //     }
+
+              
+              
+          //   }
+          // }else{
+          //   randomIndex = this.getRandomIndex('Village')
+          //   randomCharcter = this.availableList.characters.Village[randomIndex]
+          // }
           // console.log(`${i}: ${randomCharcter.name}`)
 
 
@@ -1477,6 +1539,11 @@ export default {
 
             }
           
+          }
+          if(this.gameData.players[theIndex].roll === 'Fool'){
+            this.readyToPlay = false
+            this.winnerTeam = 'Fool'
+            alert('The game is over. Fool just Won by getting lynched!')
           }
         }else{
           this.announcingMessage ='tie vote!, couldnot decide'
