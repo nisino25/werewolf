@@ -288,6 +288,17 @@
               </div>
             </div>
 
+            <!-- Red Lady  -->
+            <div v-if="currentPlayer.roll === 'Red Lady'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickLady(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
             
 
             <!-- Fool -->
@@ -451,15 +462,36 @@
                 <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
                 <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
                 <p v-if="instantMediumMessage !== ''">You'll see the result after this night</p>
-                <p v-if="currentPlayer.amountOfAbility === 0" style="color:red">You alredy used your ability</p>
+                <p v-if="currentPlayer.amountOfAbility === 0 && instantMediumMessage === ''" style="color:red">You alredy used your ability</p>
                 
                 <!-- change, choose someone, finish button  -->
                 <button @click="selectingPlayer = true" v-if="currentPlayer.amountOfAbility !== 0">Choose who you'd like to thorow a holy water at (Only once a game)</button>
 
                 <!-- <p>{{gameData.players[currentIndex]}}</p> -->
-                <br><br>
+                <br>
                 <div v-if="readyToFinishTurn">
                   <button @click="nextTurn(), instantMediumMessage =''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Red Lady  -->
+            <div v-if="currentPlayer.roll === 'Red Lady'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
+                <p v-if="instantMediumMessage !== ''">You'll see the result after this night</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="instantMediumMessage === ''">Choose who you'd like to sleep with</button>
+
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button v-if="instantMediumMessage === ''" @click="nextTurn(), instantMediumMessage =''">Skip sleeping with someone</button>
+                  <button @click="nextTurn(), instantMediumMessage =''" v-if="instantMediumMessage !== ''" >Finish your turn </button>
                 </div>
               </div> 
             </div>
@@ -544,6 +576,7 @@
 
 
       <div v-if="timeCondition === 'Day' && !isAnnouncing">
+        <!-- <p>hey</p> -->
         
 
 
@@ -607,7 +640,7 @@
               <div v-if="avengeLog !== ''">
                 <p style="color:red">{{avengeLog}}</p>
               </div>
-              <div v-if="revealLog !== ''">
+              <div v-if="revealLog !== []">
                 <p style="color:red">{{revealLog}}</p>
               </div>
 
@@ -618,6 +651,16 @@
             <p><strong>No one died last night</strong> </p>
             <p style="color:red">{{docLog}}</p>
           
+          </div>
+
+
+          <!-- in case red lady died -->          
+          <div v-if="ladyLog !== ''">
+            <p>-------------------------------------</p>
+            
+            <div v-for="(log,i) in ladyLog" :key="i" >
+              <p style="color:red"> {{log}} </p>
+            </div>
           </div>
 
 
@@ -643,7 +686,7 @@
           
 
 
-          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = '', holywaterLog = ''" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
+          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = [], holywaterLog = [], ladyLog =[]" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
         </div>
 
 
@@ -720,7 +763,7 @@ export default {
       discovery: '',
       avengeLog: '',
       revealLog: '',
-      holywaterLog: '',
+      holywaterLog: [],
 
       docLog: '',
       reviveLog: [],
@@ -728,8 +771,13 @@ export default {
       reservationForPriest: [],
       instantMediumMessage: '',
 
+      ladyLog: [],
+      reservationForLady: [],
+
       limitSolo: 1,
       killSuccess: true,
+
+      WerewolfTargetCanditate: null,
 
 
       
@@ -1104,9 +1152,7 @@ export default {
     },
     IndexOfAliveWerewolf(){
       let theList = this.gameData.players
-      // let Max = theList.length * 0.35
       let i = 0;
-      // let WerewolfCount = 0
       let indexList = []
 
       while(i < theList.length){
@@ -1149,6 +1195,65 @@ export default {
         i++
       }
       return count
+    },
+    
+
+
+    isthatRedLady(){
+      let ladyCount = 0
+
+      if(this.reservationForLady !== []){
+        console.log('so there is a list')
+        while(ladyCount < this.reservationForLady.length){
+          if(this.reservationForLady[ladyCount].actor === this.WerewolfTargetCanditate){
+            console.log('doge it')
+            return true
+          }
+          ladyCount++
+        }
+        return false
+        
+      }else{
+        return false
+      }
+    },
+    victimList(){
+      let ladyCount = 0
+      let victimList = []
+
+      if(this.reservationForLady !== []){
+        while(ladyCount < this.reservationForLady.length){
+          if(this.IndexOfAliveWerewolf.includes(this.reservationForLady[ladyCount].target)){
+            victimList.push(this.reservationForLady[ladyCount].actor)
+          }
+          ladyCount++
+        }
+        if(victimList.length >0){
+          return victimList
+        }
+        return ''
+        
+      }else{
+        return ''
+      }
+    },
+
+    wasPartnerKilled(){
+      let ladyCount = 0
+
+      if(this.reservationForLady !== []){
+        while(ladyCount < this.reservationForLady.length){
+          if(this.reservationForLady[ladyCount].target === this.WerewolfTargetCanditate){
+            return this.reservationForLady[ladyCount].actor
+          }
+          ladyCount++
+        }
+        return ''
+        
+      }else{
+        return ''
+      }
+
     }
 
 
@@ -1531,8 +1636,13 @@ export default {
 
       // exectue right herw
       // let theIndex = this.attackTargetedList[ultimateIndex].targetIndex
+      this.WerewolfTargetCanditate = ultimateIndex
 
-      if(this.docsProtectingList.includes(ultimateIndex)){
+
+      // the first condition for. if the werewolf aim at lad rady but she's sleeping with someone elsr
+      if(this.isthatRedLady){
+        this.killSuccess = false
+      }else if(this.docsProtectingList.includes(ultimateIndex)){
         this.killSuccess = false
         this.docLog = `Doctor successfully protect [ ${this.gameData.players[ultimateIndex].name} ] from Werewolf team!`
       }else{
@@ -1545,6 +1655,20 @@ export default {
 
         let theLoudMouther = this.gameData.players[ultimateIndex]
         let revealIndex= theAvenger.reveal
+
+
+        // check if red lady's lover died or not
+        if(this.wasPartnerKilled !== ''){
+          let poorIndex = this.wasPartnerKilled
+          this.gameData.players[poorIndex].isAlive = false
+          this.gameData.players[poorIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+          this.ladyLog.push(`${this.gameData.players[poorIndex].name} was killed`)
+
+        }
+
+
+        
+
 
 
         if(theAvenger.roll === 'Avenger'){
@@ -1560,6 +1684,24 @@ export default {
           this.revealLog = ''
 
           this.revealLog = `${theLoudMouther.name} told everyone that ${this.gameData.players[revealIndex].name} is ${this.gameData.players[revealIndex].roll} just before died.`
+        }
+      }
+
+
+      // check if that someone she's sleeping with a werewolf or serial killer or not
+      if(this.victimList !== '' ){
+        console.log('there was a vicitim')
+        console.log(this.victimList)
+        
+        this.killSuccess = true
+
+        let victimcCount = 0
+        while(victimcCount < this.victimList.length){
+          this.gameData.players[this.victimList[victimcCount]].isAlive = false
+          this.gameData.players[this.victimList[victimcCount]].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+          
+          this.ladyLog.push(`${this.gameData.players[this.victimList[victimcCount]].name} was killed`)
+          victimcCount++
         }
       }
 
@@ -1596,7 +1738,7 @@ export default {
         }
       }
       this.reservationForMedium = []
-      console.log('done medium revive part')
+      // console.log('done medium revive part')
 
 
 
@@ -1625,7 +1767,9 @@ export default {
         }
       }
       this.reservationForPriest = []
-      console.log('done medium revive part')
+      // console.log('done medium revive part')
+
+      this.reservationForLady = []
 
 
 
@@ -1748,9 +1892,6 @@ export default {
       }
 
 
-
-
-
       // Check if the game should go on or not
 
       if(this.PercentageOfWerewolf > 50){
@@ -1763,46 +1904,7 @@ export default {
         this.winnerTeam = 'Village'
         alert('The game is over. Village Won!')
       }
-
-
-
-      // // kill and protect
-      // // check if we have to continue the game or not
-      // // clear the target after that
-      // let count = 0;
-      // while(count < this.attackTargetedList.length){
-      //   let theIndex = this.attackTargetedList[count].targetIndex
-      //   console.log(`killing ${theIndex}`)
-      //   // this.gameData.players[theIndex].name= 'Dead'
-      //   this.gameData.players[theIndex].isAlive = false
-      //   this.gameData.players[theIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-      //   count++
-      // }
-
-
-      // // If game should continue or not
-
-      // if(this.PercentageOfWerewolf > 50){
-      //   this.readyToPlay = false
-      //   alert('The game is over. Werewolf Won')
-      // }else if(this.PercentageOfWerewolf === 0){
-      //   this.readyToPlay = false
-      //   alert('The game is over. Village Won!')
-      // }
-
-      // // this.selectingPlayer = true
-
-
-      // // this.isReadyToPlya = false
-
-      
-      // // console.log(this.gameData.players[])
-
-      // // clear the everybody' target
-
-
-      
-      // clear the all votes for at night section
+  
 
       this.selectingPlayer = false
 
@@ -2080,7 +2182,6 @@ export default {
 
       this.selectingPlayer = false
     },
-
     clickLoud(i){
       if(!this.selectingPlayer){
         return
@@ -2104,6 +2205,33 @@ export default {
 
       this.gameData.players[this.currentIndex].reveal= i 
 
+
+      this.selectingPlayer = false
+    },
+
+    clickLady(i){
+      if(!this.selectingPlayer){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        alert(`Can't choose dead player`)
+        return
+      }
+      if(targetCanditate.name === this.currentPlayer.name){
+        alert(`Can't choose yourself`)
+        return
+      }
+
+
+      let r= confirm(`Would you like to sleep with [ ${targetCanditate.name} ] ?`);
+      if(!r){
+        return;
+      }
+
+      this.reservationForLady.push({actor: this.currentIndex, target: i}); 
+      this.instantMediumMessage=  `You are sleeping with ${this.gameData.players[i].name} tonight !`
+      
 
       this.selectingPlayer = false
     },
