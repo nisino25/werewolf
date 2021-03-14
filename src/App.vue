@@ -206,6 +206,7 @@
       <small>It is {{timeCondition}} time of day {{this.gameData.days.length}}</small>
 
       <div v-if="timeCondition === 'Night' && !isAnnouncing">
+        
 
         <div class='roleselection'>
           <div class='container display-section' v-for="(player,i) in gameData.players" :key="i">
@@ -265,6 +266,19 @@
               </div>
             </div>
 
+            <!-- Loudmouth  -->
+            <div v-if="currentPlayer.roll === 'Loudmouth'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickLoud(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            
+
             <!-- Fool -->
             <div v-if="currentPlayer.roll === 'Fool'" >
               <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " >
@@ -306,6 +320,8 @@
             </div>
             
           </div>
+
+
 
 
           <div style="clear:both;" class='action-section'>
@@ -394,6 +410,25 @@
                 <br><br>
                 <div v-if="readyToFinishTurn">
                   <button @click="nextTurn(), instantMediumMessage =''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Loudmouth  -->
+            <div v-if="currentPlayer.roll === 'Loudmouth'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p>
+                <p v-if="readyToFinishTurn" style="color:red">You are revealing {{gameData.players[ currentPlayer.reveal].name}}</p> 
+
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose who you'd like to reveal when you die (Only once a game)</button>
+
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  or
+                  <button @click="selectingPlayer = true">Change who you are revealing</button>
                 </div>
               </div> 
             </div>
@@ -527,6 +562,7 @@
       <div v-if="isAnnouncing">
 
         <div v-if="isAnnouncing && timeCondition === 'Day'">
+          
           <!-- <p>{{attackTargetedList}}</p> -->
           <div v-if="killSuccess">
             <div v-for="(list,i) in attackTargetedList" :key="i" >
@@ -537,6 +573,9 @@
 
               <div v-if="avengeLog !== ''">
                 <p style="color:red">{{avengeLog}}</p>
+              </div>
+              <div v-if="revealLog !== ''">
+                <p style="color:red">{{revealLog}}</p>
               </div>
 
             </div>
@@ -557,8 +596,9 @@
           
 
 
-          <button @click="isAnnouncing= flase; selectingPlayer = true, avengeLog = '', killSuccess = true, reviveLog = []" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
+          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = ''" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
         </div>
+
 
 
 
@@ -566,10 +606,14 @@
           <p v-if="timeCondition === 'Night' && isAnnouncing && voted" style="color:red">{{announcingMessage}}</p>
 
           <div v-if="avengeLog !== ''">
-              <p style="color:red">{{avengeLog}}</p>
-            </div>
+            <p style="color:red">{{avengeLog}}</p>
+          </div>
 
-          <button @click="isAnnouncing= flase, avengeLog = ''" v-if="timeCondition === 'Night' && isAnnouncing && voted && winnerTeam === ''">Move to night time</button>
+          <div v-if="revealLog !== ''">
+            <p style="color:red">{{revealLog}}</p>
+          </div>
+
+          <button @click="isAnnouncing= flase, avengeLog = '', avengeLog = '', revealLog = ''" v-if="timeCondition === 'Night' && isAnnouncing && voted && winnerTeam === ''">Move to night time</button>
         </div>
 
       </div>
@@ -628,6 +672,8 @@ export default {
       isPlaying: false,
       discovery: '',
       avengeLog: '',
+      revealLog: '',
+
       docLog: '',
       reviveLog: [],
       reservationForMedium: [],
@@ -913,6 +959,17 @@ export default {
             readyFlag = false
           }
           break
+
+        case 'Loudmouth':
+          if(this.currentPlayer.reveal=== ''){
+            readyFlag  =false
+            break
+          }
+          
+          if(!this.gameData.players[this.currentPlayer.reveal].isAlive){
+            readyFlag = false
+          }
+          break
         
         
         // doctor or village just can finish without doing anything
@@ -1091,14 +1148,13 @@ export default {
       // this.localMenu = 'predemo'
       this.localMenu = 'role-Village'
       
-      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: ''});
-      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
-      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
-      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
-      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
-      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
-      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: ''});
-
+      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
       // console.log(this.gameData)
 
 
@@ -1358,11 +1414,9 @@ export default {
     },
 
     executeNightActions(){
-
       // kill and protect
       // check if we have to continue the game or not
       // clear the target after that
-
       
       let ultimateIndex = null
       let randomCanditaList = []
@@ -1431,7 +1485,6 @@ export default {
       // exectue right herw
       // let theIndex = this.attackTargetedList[ultimateIndex].targetIndex
 
-
       if(this.docsProtectingList.includes(ultimateIndex)){
         this.killSuccess = false
         this.docLog = `Doctor successfully protect [ ${this.gameData.players[ultimateIndex].name} ] from Werewolf team!`
@@ -1443,6 +1496,9 @@ export default {
         let theAvenger = this.gameData.players[ultimateIndex]
         let AvenegIndex= theAvenger.dieWith
 
+        let theLoudMouther = this.gameData.players[ultimateIndex]
+        let revealIndex= theAvenger.reveal
+
 
         if(theAvenger.roll === 'Avenger'){
           if(this.gameData.players[AvenegIndex].isAlive){
@@ -1453,9 +1509,12 @@ export default {
             this.avengeLog = `${theAvenger.name} killed ${this.gameData.players[AvenegIndex].name} ( ${this.gameData.players[AvenegIndex].roll} ) just before died.`
 
           }
+        }else if(theLoudMouther.roll === 'Loudmouth'){
+          this.revealLog = ''
+
+          this.revealLog = `${theLoudMouther.name} told everyone that ${this.gameData.players[revealIndex].name} is ${this.gameData.players[revealIndex].roll} just before died.`
         }
       }
-
 
 
       
@@ -1468,17 +1527,12 @@ export default {
       }
 
 
-
-
-
-
       // medium revive if necessary 
       let MediumCount = 0
       let theMediumIndex = null
       let i =0
-
       if(this.reservationForMedium.length !== 0){
-        console.log('called the function')
+        console.log('called the medium function')
         while(MediumCount < this.reservationForMedium.length){
           theMediumIndex =  this.reservationForMedium[MediumCount]
           this.gameData.players[theMediumIndex].isAlive = true
@@ -1486,21 +1540,21 @@ export default {
           
           i =0
           while(i < this.rolesList.Village.length){
-            if(this.rolesList.Village[theMediumIndex].name === this.gameData.players[i].roll){
+            if(this.rolesList.Village[i].name === this.gameData.players[theMediumIndex].roll){
               this.gameData.players[theMediumIndex].imgLink = this.rolesList.Village[i].imgLink
             }
             i++ 
           }
+
+          MediumCount++
         }
-        MediumCount++
       }
       this.reservationForMedium = []
-
+      console.log('done medium revive part')
 
 
 
       // If game should continue or not
-
       if(this.PercentageOfWerewolf > 50){
         this.readyToPlay = false
         this.winnerTeam = 'Werewolf'
@@ -1510,7 +1564,6 @@ export default {
         this.winnerTeam = 'Village'
         alert('The game is over. Village Won!')
       }
-
 
 
       // clearing the voting datas
@@ -1581,6 +1634,9 @@ export default {
           let theAvenger = this.gameData.players[theIndex]
           let AvenegIndex= theAvenger.dieWith
 
+          let theLoudMouther = this.gameData.players[theIndex]
+          let revealIndex= theAvenger.reveal
+
 
           if(theAvenger.roll === 'Avenger'){
             if(this.gameData.players[AvenegIndex].isAlive){
@@ -1588,11 +1644,18 @@ export default {
               this.gameData.players[AvenegIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
               this.avengeLog = ''
 
-              this.avengeLog = `${theAvenger.name} killed ${this.gameData.players[AvenegIndex].name} ( ${this.gameData.players[AvenegIndex].roll} ) just before died.`
+              this.avengeLog = `${theAvenger.name} killed ${this.gameData.players[AvenegIndex].name} ${this.gameData.players[AvenegIndex].roll} just before died.`
 
             }
           
+          }else if(theLoudMouther.roll === 'Loudmouth'){
+            this.revealLog = ''
+
+            this.revealLog = `${theLoudMouther.name} told everyone that ${this.gameData.players[revealIndex].name} is ${this.gameData.players[revealIndex].roll} just before died.`
           }
+
+
+
           if(this.gameData.players[theIndex].roll === 'Fool'){
             this.readyToPlay = false
             this.winnerTeam = `${this.gameData.players[theIndex].name}'s team(fool) won!`
@@ -1886,7 +1949,6 @@ export default {
 
       this.selectingPlayer = false
     },
-
     clickMediium(i){
       if(!this.selectingPlayer && (this.currentPlayer.amountOfAbility === 0)){
         return
@@ -1913,6 +1975,33 @@ export default {
       this.reservationForMedium.push(i); 
       this.instantMediumMessage=  `You jsut revived ${this.gameData.players[i].name} !`
       
+
+      this.selectingPlayer = false
+    },
+
+    clickLoud(i){
+      if(!this.selectingPlayer){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        alert(`Can't choose dead player`)
+        return
+      }
+      if(targetCanditate.name === this.currentPlayer.name){
+        alert(`Can't choose yourself`)
+        return
+      }
+
+
+      let r= confirm(`Would you like to reveal [ ${targetCanditate.name} ] when you die?`);
+      if(!r){
+        return;
+      }
+
+
+      this.gameData.players[this.currentIndex].reveal= i 
+
 
       this.selectingPlayer = false
     },
