@@ -381,7 +381,7 @@
               <div style="clear:both;">
                 <!-- <p>{{selectingPlayer}}</p> -->
                 <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
-                <p v-if="reviveLog !== ''">{{reviveLog[reviveLog.length-1]}}</p>
+                <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
                 <p v-if="currentPlayer.amountOfAbility === 0" style="color:red">You alredy used your ability</p>
                 <!-- <p> {{currentPlayer.amountOfAbility}}</p> -->
                 <!-- <p>hey</p> -->
@@ -393,7 +393,7 @@
                 <!-- <p>{{gameData.players[currentIndex]}}</p> -->
                 <br><br>
                 <div v-if="readyToFinishTurn">
-                  <button @click="nextTurn()" >Finish your turn </button>
+                  <button @click="nextTurn(), instantMediumMessage =''" >Finish your turn </button>
                 </div>
               </div> 
             </div>
@@ -630,9 +630,12 @@ export default {
       avengeLog: '',
       docLog: '',
       reviveLog: [],
+      reservationForMedium: [],
+      instantMediumMessage: '',
 
       limitSolo: 1,
       killSuccess: true,
+
 
       
 
@@ -956,6 +959,28 @@ export default {
       }
 
     },
+    adequentSolo(){
+      let theList = this.gameData.players
+      let Max = theList.length * 0.35
+      let i = 0;
+      let SoloCount = 0
+
+      while(i < theList.length){
+        if(theList[i].team === 'Solo'){
+          SoloCount++
+          // console.log(WerewolfCount)
+        }
+        i++
+      }
+
+      // Talking about the future, so plus one
+      if(SoloCount + 1 <= Max){
+        return false
+      }else{
+        return true
+      }
+
+    },
     aliveWerewolfNum(){
       let theList = this.gameData.players
       // let Max = theList.length * 0.35
@@ -1148,7 +1173,7 @@ export default {
             randomIndex = this.getRandomIndex('Werewolf')
             randomCharcter = this.availableList.characters.Werewolf[randomIndex]
 
-          }else if(randomRandom >= 65 && this.SoloNum < 1){
+          }else if(randomRandom >= 65 && randomRandom <= 80 && !this.adequentSolo){
             randomIndex = this.getRandomIndex('Solo')
             randomCharcter = this.availableList.characters.Solo[randomIndex]
 
@@ -1446,6 +1471,34 @@ export default {
 
 
 
+
+      // medium revive if necessary 
+      let MediumCount = 0
+      let theMediumIndex = null
+      let i =0
+
+      if(this.reservationForMedium.length !== 0){
+        console.log('called the function')
+        while(MediumCount < this.reservationForMedium.length){
+          theMediumIndex =  this.reservationForMedium[MediumCount]
+          this.gameData.players[theMediumIndex].isAlive = true
+          this.reviveLog.push( `Medium revived ${this.gameData.players[theMediumIndex].name} !`)
+          
+          i =0
+          while(i < this.rolesList.Village.length){
+            if(this.rolesList.Village[theMediumIndex].name === this.gameData.players[i].roll){
+              this.gameData.players[theMediumIndex].imgLink = this.rolesList.Village[i].imgLink
+            }
+            i++ 
+          }
+        }
+        MediumCount++
+      }
+      this.reservationForMedium = []
+
+
+
+
       // If game should continue or not
 
       if(this.PercentageOfWerewolf > 50){
@@ -1542,7 +1595,7 @@ export default {
           }
           if(this.gameData.players[theIndex].roll === 'Fool'){
             this.readyToPlay = false
-            this.winnerTeam = 'Fool'
+            this.winnerTeam = `${this.gameData.players[theIndex].name}'s team(fool) won!`
             alert('The game is over. Fool just Won by getting lynched!')
           }
         }else{
@@ -1844,7 +1897,7 @@ export default {
         alert(`You have to choose a dead player`)
         return
       }
-      if(targetCanditate.team === 'Werewolf' && targetCanditate.team === 'Solo'){
+      if(targetCanditate.team === 'Werewolf' || targetCanditate.team === 'Solo'){
         alert(`You can't revive a player from  wolf or solo team`)
         return
       }
@@ -1855,19 +1908,10 @@ export default {
         return;
       }
 
-
+      // reduce the num for the revive but wait for the actual step
       this.gameData.players[this.currentIndex].amountOfAbility = this.gameData.players[this.currentIndex].amountOfAbility -1
-      this.gameData.players[i].isAlive = true
-
-      // get the img back
-      let count =0
-      while(count < this.rolesList.Village.length){
-        if(this.rolesList.Village[count].name === this.gameData.players[i].roll)
-        this.gameData.players[i].imgLink = this.rolesList.Village[count].imgLink
-        count++ 
-      }
-      // this.gameData.players[i].imgLink = 
-      this.reviveLog.push( `Medium revived ${this.gameData.players[i].name} !`)
+      this.reservationForMedium.push(i); 
+      this.instantMediumMessage=  `You jsut revived ${this.gameData.players[i].name} !`
       
 
       this.selectingPlayer = false
