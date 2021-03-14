@@ -277,6 +277,17 @@
               </div>
             </div>
 
+            <!-- Priest  -->
+            <div v-if="currentPlayer.roll === 'Priest'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickPriest(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
             
 
             <!-- Fool -->
@@ -433,6 +444,28 @@
               </div> 
             </div>
 
+            <!-- Priest  -->
+            <div v-if="currentPlayer.roll === 'Priest'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
+                <p v-if="instantMediumMessage !== ''">You'll see the result after this night</p>
+                <p v-if="currentPlayer.amountOfAbility === 0" style="color:red">You alredy used your ability</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="currentPlayer.amountOfAbility !== 0">Choose who you'd like to thorow a holy water at (Only once a game)</button>
+
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn(), instantMediumMessage =''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+
+
 
             <!-- Fool  -->
             <div v-if="currentPlayer.roll === 'Fool'">
@@ -588,15 +621,29 @@
           </div>
 
 
-          <!-- in case medium revive someone -->
-          <div v-for="(log,i) in reviveLog" :key="i" >
-            <p style="color:red"> {{log}} </p>
+          <!-- in case medium revive someone -->          
+          <div v-if="reviveLog !== ''">
+            <p>-------------------------------------</p>
+            
+            <div v-for="(log,i) in reviveLog" :key="i" >
+              <p style="color:red"> {{log}} </p>
+            </div>
+          </div>
+
+          <!-- in case priest threw water -->
+          <div v-if="holywaterLog !== ''">
+            <p>-------------------------------------</p>
+
+            <div v-for="(log,i) in holywaterLog" :key="i" >
+              <p style="color:red"> {{log}} </p>
+            </div>
           </div>
           
           
+          
 
 
-          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = ''" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
+          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = '', holywaterLog = ''" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
         </div>
 
 
@@ -673,10 +720,12 @@ export default {
       discovery: '',
       avengeLog: '',
       revealLog: '',
+      holywaterLog: '',
 
       docLog: '',
       reviveLog: [],
       reservationForMedium: [],
+      reservationForPriest: [],
       instantMediumMessage: '',
 
       limitSolo: 1,
@@ -1436,8 +1485,6 @@ export default {
           }
           listCount++
         }
-        console.log('Just by yourself')
-        console.log('------')
 
         ultimateIndex = lonleyWolf.killTarget
       }else{
@@ -1490,7 +1537,7 @@ export default {
         this.docLog = `Doctor successfully protect [ ${this.gameData.players[ultimateIndex].name} ] from Werewolf team!`
       }else{
         this.killSuccess = true
-          this.gameData.players[ultimateIndex].isAlive = false
+        this.gameData.players[ultimateIndex].isAlive = false
         this.gameData.players[ultimateIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
 
         let theAvenger = this.gameData.players[ultimateIndex]
@@ -1518,7 +1565,6 @@ export default {
 
 
       
-
       // set all the targets for the werewolf so it will easy to access later
       let wolfCount = 0
       while(wolfCount < this.IndexOfAliveWerewolf.length){
@@ -1554,6 +1600,35 @@ export default {
 
 
 
+      // Priest water if necessary 
+      let PriestCount = 0
+      let thePriestIndex = null
+      let theActorIndex = null
+      // let i =0
+      if(this.reservationForPriest.length !== 0){
+        console.log('called the priest function')
+        while(PriestCount< this.reservationForPriest.length){
+          thePriestIndex =  this.reservationForPriest[PriestCount].target
+          theActorIndex = this.reservationForPriest[PriestCount].actor
+
+          // check if it is a werewolf team or not
+          if(this.gameData.players[thePriestIndex].team === 'Werewolf'){
+            this.gameData.players[thePriestIndex].isAlive = false
+            this.gameData.players[thePriestIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+            this.holywaterLog.push( `Priest killed ${this.gameData.players[thePriestIndex].name} with holy water!`)
+          }else{
+            this.gameData.players[theActorIndex].isAlive = false
+            this.gameData.players[theActorIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
+            this.holywaterLog.push( `Priest died after throwing water ${this.gameData.players[thePriestIndex].name} ( not werewolf)!`)
+          }
+          PriestCount++
+        }
+      }
+      this.reservationForPriest = []
+      console.log('done medium revive part')
+
+
+
       // If game should continue or not
       if(this.PercentageOfWerewolf > 50){
         this.readyToPlay = false
@@ -1564,6 +1639,8 @@ export default {
         this.winnerTeam = 'Village'
         alert('The game is over. Village Won!')
       }
+
+      
 
 
       // clearing the voting datas
@@ -1974,6 +2051,31 @@ export default {
       this.gameData.players[this.currentIndex].amountOfAbility = this.gameData.players[this.currentIndex].amountOfAbility -1
       this.reservationForMedium.push(i); 
       this.instantMediumMessage=  `You jsut revived ${this.gameData.players[i].name} !`
+      
+
+      this.selectingPlayer = false
+    },
+    clickPriest(i){
+      if(!this.selectingPlayer && (this.currentPlayer.amountOfAbility === 0)){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        this.selectingPlayer = false
+        alert(`You can't choose a dead player`)
+        return
+      }
+
+
+      let r= confirm(`Would you like to throw holy water at[ ${targetCanditate.name} ] ?`);
+      if(!r){
+        return;
+      }
+
+      // reduce the num for the revive but wait for the actual step
+      this.gameData.players[this.currentIndex].amountOfAbility = this.gameData.players[this.currentIndex].amountOfAbility -1
+      this.reservationForPriest.push({actor: this.currentIndex, target: i}); 
+      this.instantMediumMessage=  `You jsut threw holy water at ${this.gameData.players[i].name} !`
       
 
       this.selectingPlayer = false
