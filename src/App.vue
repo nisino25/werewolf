@@ -1,5 +1,14 @@
 <template>
 
+  <div v-if="cheating">
+    <button @click="cheating = false"> No more cheating</button>
+    <div v-for="(player,i) in endgameList" :key="i">
+      <p v-if="player.isAlive">{{player.name}}[Alive]: {{player.roll}}</p>
+      <p v-else>{{player.name}}[Dead]: {{player.roll}}</p>
+
+    </div> 
+  </div>
+
 
   <div v-if="currentMenu === 'register'">
     <h5>Welcome</h5>
@@ -30,6 +39,8 @@
 
 
   <div v-if="currentMenu === 'local'">
+    <button  @click ="cheating = true">Cheating</button>
+
 
     <div v-if="localMenu === 'role-Village' || localMenu === 'role-wolves' || localMenu === 'role-solo'">
       <span class='counter' :class="[localMenu === 'role-Village' ? 'selectedCounter' : '']">Village  {{availableList.counters.Village}}/18</span>
@@ -227,7 +238,7 @@
             <div v-if="currentPlayer.team === 'Village' || currentPlayer.team === 'Solo'">
               <div class="player-card border-black"   :class="[player.isAlive ? '': 'dead']" @click="actionTrigger(i)">
 
-                <img :src="player.imgLink" style="width: 60px; margin-top:5px" v-if="!player.isAlive   || player.name === this.currentPlayer.name">
+                <img :src="player.imgLink" style="width: 100%; margin-top:5px" v-if="!player.isAlive   || player.name === this.currentPlayer.name">
                 <img :src="questionPic" style="width: 60px; margin-top:5px" v-else>
 
                 <span class='player-name'>{{player.name}}:</span>
@@ -1075,6 +1086,7 @@ import { rolesList } from './const/roles.js'
 export default {
   data(){
     return {
+      cheating: false,
       deathPic: 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5',
       questionPic: 'https://proofthatblog.com/wp-content/uploads/2013/06/question-mark.jpg',
       messages: null,
@@ -2834,6 +2846,7 @@ export default {
   }
 }
 </script>
+
 <style>
 
 #app {
@@ -2871,7 +2884,7 @@ export default {
   /* position: absolute; */
   width: 22%;
   /* top: 20px; */
-  height:350px;
+  height:200px;
   /* margin-top: 50px; */
   /* width: 60em; */
   /* background-color: #304455; */
