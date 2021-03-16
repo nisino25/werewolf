@@ -1045,7 +1045,9 @@
           <hr>
 
         <div v-for="(player,i) in endgameList" :key="i">
-          <p>{{player.name}}: {{player.roll}}</p>
+          <p v-if="player.isAlive">{{player.name}}[Alive]: {{player.roll}}</p>
+          <p v-else>{{player.name}}[Dead]: {{player.roll}}</p>
+
         </div> 
 
           
@@ -2153,14 +2155,19 @@ export default {
 
 
       // If game should continue or not
-      if(this.PercentageOfWerewolf > 50){
+      if(this.PercentageOfWerewolf > 50 && this.numberOfSerialKiller === 0){
         this.readyToPlay = false
+        
         this.winnerTeam = 'Werewolf'
         alert('The game is over. Werewolf Won')
-      }else if(this.PercentageOfWerewolf === 0){
+      }else if(this.PercentageOfWerewolf === 0 && this.numberOfSerialKiller === 0 ){
         this.readyToPlay = false
         this.winnerTeam = 'Village'
         alert('The game is over. Village Won!')
+      }else if(this.gameData.players.length === this.numberOfSerialKiller){
+        this.readyToPlay = false
+        this.winnerTeam = 'Serial Killer'
+        alert('The game is over. Serial Killer Won!')
       }
 
       
@@ -2288,7 +2295,6 @@ export default {
         this.readyToPlay = false
         this.winnerTeam = 'Serial Killer'
         alert('The game is over. Serial Killer Won!')
-        
       }
   
 
@@ -2865,7 +2871,7 @@ export default {
   /* position: absolute; */
   width: 22%;
   /* top: 20px; */
-  height:115px;
+  height:350px;
   /* margin-top: 50px; */
   /* width: 60em; */
   /* background-color: #304455; */
