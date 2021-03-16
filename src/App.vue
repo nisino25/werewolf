@@ -1647,7 +1647,7 @@ export default {
       let count =0
       let list = this.gameData.players
       let postList = []
-
+ 
       while(count < list.length){
         postList.push(list[count])
 
