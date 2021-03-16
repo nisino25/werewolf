@@ -2,25 +2,32 @@
 
 
   <div v-if="currentMenu === 'register'">
-    <form @submit.prevent="register()">
-      <input placeholder="Type your username..." v-model="username">
-      <button>register</button>
-      <br>
-      <button @click="skip()">Skip</button>
-      <button @click="oniSkip()">Oni skip </button>
+    <h5>Welcome</h5>
+    1. <input v-model="player1"><br>
+    2. <input v-model="player2"><br>
+    3. <input v-model="player3"><br>
+    4.<input v-model="player4"><br>
+    5. <input v-model="player5"><br>
+    6. <input v-model="player6"><br>
+    7. <input v-model="player7"><br>
+    <br>
 
-      <!-- <p>{{rolesList.Village}}</p> -->
-    </form>
+    <button @click="finishTheInput">Register </button>
+    <br><br><br>
+
+    <button @click="skip()">Skip</button>
+    <button @click="oniSkip()">Oni skip </button>
   </div>
 
   <div v-if="currentMenu === 'menu'">
     <p>{{currentMenu}}</p>
-    <h5>Welcome, {{username}}</h5>
+    
 
     <button @click="currentMenu = 'online'">Play online</button>
     <button @click="localProcess()" >Play with one device</button>
     
   </div>
+
 
   <div v-if="currentMenu === 'local'">
 
@@ -93,7 +100,6 @@
       <button @click="practice()">OK?</button>
 
     </div>
-
 
     <div v-if="localMenu === 'predemo' && !isPlaying" >
 
@@ -201,11 +207,314 @@
 
 
 
+    <div v-if="waitingForTheConfirm" style="margin-top: 200px">
+      <p>It is {{this.currentPlayer.name}}'s turn now </p>
+      <br>
+      <button @click="waitingForTheConfirm = false">OK</button>
+    </div>
 
-    <div v-if="isPlaying">
+    <div v-if="isPlaying && !waitingForTheConfirm">
       <small>It is {{timeCondition}} time of day {{this.gameData.days.length}}</small>
 
-      <div v-if="timeCondition === 'Night' && !isAnnouncing">
+      <div v-if="timeCondition === 'Night' && !isAnnouncing && actualyPlaying">
+        
+
+        <div class='roleselection'>
+
+          <div class='container display-section' v-for="(player,i) in gameData.players" :key="i">
+
+            <!-- Team Village and Sol0o  -->
+            <div v-if="currentPlayer.team === 'Village' || currentPlayer.team === 'Solo'">
+              <div class="player-card border-black"   :class="[player.isAlive ? '': 'dead']" @click="actionTrigger(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px" v-if="!player.isAlive   || player.name === this.currentPlayer.name">
+                <img :src="questionPic" style="width: 60px; margin-top:5px" v-else>
+
+                <span class='player-name'>{{player.name}}:</span>
+              </div>
+            </div>
+
+            <!-- solo wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
+              <div class="player-card border-black"   :class="[player.isAlive ? '': 'dead']" @click="actionTrigger(i)">
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px" v-if="!player.isAlive || player.name === this.currentPlayer.name || player.team === 'Werewolf' ">
+                <img :src="questionPic" style="width: 60px; margin-top:5px" v-else>
+
+                <span class='player-name'>{{player.name}}:</span>
+              </div>
+            </div>
+
+            <!-- multiple wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum > 1">
+              <div class="player-card border-black"   :class="[player.isAlive ? '': 'dead']" @click="actionTrigger(i)">
+
+                <img v-if="player.team === 'Werewolf' || !player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px">
+                <span v-if="player.team !== 'Werewolf' && player.isAlive" style="width: 60px; margin-top:5px; font-size: 300%" >
+                  {{PreyCandidatesList[i].voteCount}}
+                </span>
+                <!-- <img v-if="!player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px" > -->
+
+                <span class='player-name'>{{player.name}}:</span>
+                <!-- <span class='player-roll'>{{player.roll}}</span> -->
+              </div>
+            </div>
+            
+          </div>
+
+          
+
+          <div style="clear:both;" class='action-section'>
+
+            <!-- Villager roles  -->
+            <div v-if="currentPlayer.roll === 'Villager'">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}}'s {{currentPlayer.roll}}</p>
+
+                <!-- <p>Trivia is going to be here</p> -->
+                <!-- <button @click="nextTurn()" v-if="readyToFinishTurn">Confirm</button> -->
+                <button @click="nextTurn()" v-if="readyToFinishTurn">Finish your turn </button>
+              </div>
+
+            </div>
+
+            <!-- seer, aura seer   -->
+            <div v-if="currentPlayer.roll === 'Seer' || currentPlayer.roll === 'Aura Seer'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="color:red">{{discovery}}</p>
+                
+                 <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn(), discovery = ''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Aveneg  -->
+            <div v-if="currentPlayer.roll === 'Avenger'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="color:red">Your target is {{gameData.players[ currentPlayer.dieWith].name}}</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  or
+                  <button @click="selectingPlayer = true" v-if="readyToFinishTurn">Change your target</button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Doctor  -->
+            <div v-if="currentPlayer.roll === 'Doctor'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="color:red">You are protecting {{gameData.players[ currentPlayer.protecting].name}}</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose who you'd like to protecte</button>
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  or
+                  <button @click="selectingPlayer = true" v-if="readyToFinishTurn">Change who you are protecting</button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Medium  -->
+            <div v-if="currentPlayer.roll === 'Medium'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
+                <p v-if="currentPlayer.amountOfAbility === 0" style="color:red">You alredy used your ability</p>
+                <!-- <p> {{currentPlayer.amountOfAbility}}</p> -->
+                <!-- <p>hey</p> -->
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="currentPlayer.amountOfAbility !== 0 && hasAnyVillagTeamDied">Choose who you'd like to revive (Only once a game)</button>
+
+                <p v-if="!hasAnyVillagTeamDied">No one from village has died yet</p>
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn(), instantMediumMessage =''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Loudmouth  -->
+            <div v-if="currentPlayer.roll === 'Loudmouth'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p>
+                <p v-if="readyToFinishTurn" style="color:red">You are revealing {{gameData.players[ currentPlayer.reveal].name}}</p> 
+
+                <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose who you'd like to reveal when you die (Only once a game)</button>
+
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  or
+                  <button @click="selectingPlayer = true">Change who you are revealing</button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Priest  -->
+            <div v-if="currentPlayer.roll === 'Priest'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
+                <p v-if="instantMediumMessage !== ''">You'll see the result after this night</p>
+                <p v-if="currentPlayer.amountOfAbility === 0 && instantMediumMessage === ''" style="color:red">You alredy used your ability</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="currentPlayer.amountOfAbility !== 0">Choose who you'd like to thorow a holy water at (Only once a game)</button>
+
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br>
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn(), instantMediumMessage =''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Red Lady  -->
+            <div v-if="currentPlayer.roll === 'Red Lady'">
+              <div style="clear:both;">
+                <!-- <p>{{selectingPlayer}}</p> -->
+
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="instantMediumMessage !== ''">{{instantMediumMessage}}</p>
+                <p v-if="instantMediumMessage !== ''">You'll see the result after this night</p>
+                
+                <!-- change, choose someone, finish button  -->
+                <button @click="selectingPlayer = true" v-if="instantMediumMessage === ''">Choose who you'd like to sleep with</button>
+
+                <!-- <p>{{gameData.players[currentIndex]}}</p> -->
+                <br><br>
+                <div v-if="readyToFinishTurn">
+                  <button v-if="instantMediumMessage === ''" @click="nextTurn(), instantMediumMessage =''">Skip sleeping with someone</button>
+                  <button @click="nextTurn(), instantMediumMessage =''" v-if="instantMediumMessage !== ''" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+
+
+
+            <!-- Fool  -->
+            <div v-if="currentPlayer.roll === 'Fool'">
+              <div style="clear:both;">
+                <div v-if="readyToFinishTurn">
+                  <p>{{currentPlayer.name}}'s {{currentPlayer.roll}}</p>
+                  <button @click="nextTurn()" >Finish your turn </button>
+                </div>
+              </div> 
+            </div>
+
+            <!-- Serial Killer  -->
+            <div v-if="currentPlayer.roll === 'Serial Killer' ">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn">Your taret is: [ {{gameData.players[currentPlayer.serialTarget].name}} ]</p>
+
+                
+                 <!-- change, choose someone, finish button  -->
+                 <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  <small style="margin-left:10px; margin-right:10px;">or</small> 
+                  <button @click="selectingPlayer = true">Change your target</button>
+        
+                </div>
+                
+              </div> 
+
+            </div>
+
+
+
+            <!-- solo wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum === 1">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn">Your taret is: [ {{gameData.players[currentPlayer.killTarget].name}} ]</p>
+
+                
+                 <!-- change, choose someone, finish button  -->
+                 <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  <small style="margin-left:10px; margin-right:10px;">or</small> 
+                  <button @click="selectingPlayer = true">Change your target</button>
+        
+                </div>
+                
+              </div> 
+
+            </div>
+
+            <!-- multiple wolf  -->
+            <div v-if="currentPlayer.roll === 'Werewolf' && aliveWerewolfNum > 1">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn" style="margin-top:-10px">Your taret is: [ {{gameData.players[currentPlayer.killTarget].name}} ]</p>
+
+                <p>-------- Your werewolf teammate -----------</p>
+                <!-- <p>{{aliveWerewolfNum}}</p> -->
+                <div v-for="(aliveWolf,i) in IndexOfAliveWerewolf" :key="i">
+                  <div v-if="currentIndex !== aliveWolf">
+                    <p v-if="gameData.players[aliveWolf].killTarget === ''">C{{gameData.players[aliveWolf].name}} : Not target selected yet</p>
+                    <p style="margin-top:-10px; color:red" v-else>{{gameData.players[aliveWolf].name}} is targeting: {{gameData.players[gameData.players[aliveWolf].killTarget].name}}</p>
+
+                  </div>
+
+                </div>
+                 <p style="margin-top:-10px">-----------------------------------------</p>
+
+
+                 <!-- change, choose someone, finish button  -->
+                 <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  <small style="margin-left:10px; margin-right:10px;">or</small> 
+                  <button @click="selectingPlayer = true">Change your target</button>
+        
+                </div>
+                
+              </div> 
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+      </div>
+
+
+
+
+      <div v-if="timeCondition === 'Night' && !isAnnouncing && !actualyPlaying">
         
 
         <div class='roleselection'>
@@ -304,6 +613,17 @@
             <!-- Fool -->
             <div v-if="currentPlayer.roll === 'Fool'" >
               <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " >
+
+                <img :src="player.imgLink" style="width: 60px; margin-top:5px">
+
+                <span class='player-name'>{{player.name}}:</span>
+                <span class='player-roll'>{{player.roll}}</span>
+              </div>
+            </div>
+
+            <!-- Serial Killer -->
+            <div v-if="currentPlayer.roll === 'Serial Killer'" >
+              <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),selectingPlayer && player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickSerial(i)" >
 
                 <img :src="player.imgLink" style="width: 60px; margin-top:5px">
 
@@ -509,6 +829,27 @@
               </div> 
             </div>
 
+            <!-- Serial Killer  -->
+            <div v-if="currentPlayer.roll === 'Serial Killer' ">
+              <div style="clear:both;">
+                <p>{{currentPlayer.name}} is {{currentPlayer.roll}}</p> 
+                <p v-if="readyToFinishTurn">Your taret is: [ {{gameData.players[currentPlayer.serialTarget].name}} ]</p>
+
+                
+                 <!-- change, choose someone, finish button  -->
+                 <button @click="selectingPlayer = true" v-if="!readyToFinishTurn">Choose your target</button>
+
+                <div v-if="readyToFinishTurn">
+                  <button @click="nextTurn()" >Finish your turn </button>
+                  <small style="margin-left:10px; margin-right:10px;">or</small> 
+                  <button @click="selectingPlayer = true">Change your target</button>
+        
+                </div>
+                
+              </div> 
+
+            </div>
+
 
 
             <!-- solo wolf  -->
@@ -542,9 +883,8 @@
                 <!-- <p>{{aliveWerewolfNum}}</p> -->
                 <div v-for="(aliveWolf,i) in IndexOfAliveWerewolf" :key="i">
                   <div v-if="currentIndex !== aliveWolf">
-                    <p style="color:red">{{gameData.players[aliveWolf].name}}, as {{gameData.players[aliveWolf].roll}}.</p>
                     <p v-if="gameData.players[aliveWolf].killTarget === ''">Current Target: Not selected yet</p>
-                    <p style="margin-top:-10px" v-else>Current Target: {{gameData.players[gameData.players[aliveWolf].killTarget].name}}</p>
+                    <p style="margin-top:-10px; color:red" v-else>{{gameData.players[aliveWolf].name}} is targeting: {{gameData.players[gameData.players[aliveWolf].killTarget].name}}</p>
 
                   </div>
 
@@ -581,7 +921,7 @@
 
 
         <div class='container display-section' v-for="(player,i) in gameData.players" :key="i">
-            <div class="player-card"   :class="[(player.isAlive ? '': 'dead'),(player.team === 'Werewolf'? 'border-red': ''),(player.team === 'Village'? 'border-black': ''),(player.team === 'Solo'? 'border-green': ''),player.name !== currentPlayer.team ? 'selectingPlayer': ''] " @click="clickVote(i)">
+            <div class="player-card border-black"   :class="(player.isAlive ? '': 'dead')" @click="clickVote(i)">
 
               <span style="width: 60px; margin-top:5px; font-size: 300%" v-if="timeCondition === 'Day' && !isAnnouncing && player.isAlive">
               <img v-if="!player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px" >
@@ -591,7 +931,7 @@
               <img v-if="!player.isAlive" :src="player.imgLink" style="width: 60px; margin-top:5px" >
 
               <span class='player-name'>{{player.name}}:</span>
-              <span class='player-roll'>{{player.roll}}</span>
+              <!-- <span class='player-roll'>{{player.roll}}</span> -->
             </div>
           
         </div>
@@ -628,29 +968,25 @@
       <div v-if="isAnnouncing">
 
         <div v-if="isAnnouncing && timeCondition === 'Day'">
+
+          <p>-------------------------------------</p>
+
           
-          <!-- <p>{{attackTargetedList}}</p> -->
-          <div v-if="killSuccess">
-            <div v-for="(list,i) in attackTargetedList" :key="i" >
-              <p  style="color:red">{{gameData.players[list.targetIndex].name}} was killed.</p>
-              <p  style="color:red">{{gameData.players[list.targetIndex].name}} was {{gameData.players[list.targetIndex].roll}}.</p>
 
-              <br>
-
-              <div v-if="avengeLog !== ''">
-                <p style="color:red">{{avengeLog}}</p>
-              </div>
-              <div v-if="revealLog !== []">
-                <p style="color:red">{{revealLog}}</p>
-              </div>
-
+          <!-- in case red lady died -->          
+          <div v-if="nightLog  !== []">
+            
+            
+            <div v-for="(log,i) in nightLog" :key="i" >
+              <p style="color:red"> {{log}} </p>
+              <p>-------------------------------------</p>
             </div>
           </div>
 
-          <div v-if="!killSuccess">
-            <p><strong>No one died last night</strong> </p>
-            <p style="color:red">{{docLog}}</p>
-          
+          <div v-if="nightLog.length  === 0">
+            
+            No one died!
+            <p>-------------------------------------</p>
           </div>
 
 
@@ -672,21 +1008,12 @@
               <p style="color:red"> {{log}} </p>
             </div>
           </div>
-
-          <!-- in case priest threw water -->
-          <div v-if="holywaterLog !== ''">
-            <p>-------------------------------------</p>
-
-            <div v-for="(log,i) in holywaterLog" :key="i" >
-              <p style="color:red"> {{log}} </p>
-            </div>
-          </div>
           
           
           
 
 
-          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = [], holywaterLog = [], ladyLog =[]" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
+          <button @click="isAnnouncing= flase; selectingPlayer = true,  killSuccess = true, reviveLog = [], avengeLog = '', revealLog = [], holywaterLog = [], ladyLog =[], nightLog = [], waitingForTheConfirm = true" v-if="timeCondition === 'Day' && isAnnouncing && winnerTeam === ''">Move to day time</button>
         </div>
 
 
@@ -703,7 +1030,7 @@
             <p style="color:red">{{revealLog}}</p>
           </div>
 
-          <button @click="isAnnouncing= flase, avengeLog = '', avengeLog = '', revealLog = ''" v-if="timeCondition === 'Night' && isAnnouncing && voted && winnerTeam === ''">Move to night time</button>
+          <button @click="isAnnouncing= flase, avengeLog = '', avengeLog = '', revealLog = '',waitingForTheConfirm = true" v-if="timeCondition === 'Night' && isAnnouncing && voted && winnerTeam === ''">Move to night time</button>
         </div>
 
       </div>
@@ -715,6 +1042,13 @@
       <!-- if the team wins -->
       <div v-if="winnerTeam !== ''" style="clear:both; margin-top: 40px; color:red">
           <p>{{winnerTeam}} won!</p>
+          <hr>
+
+        <div v-for="(player,i) in endgameList" :key="i">
+          <p>{{player.name}}: {{player.roll}}</p>
+        </div> 
+
+          
       
       </div>
     </div>
@@ -739,6 +1073,8 @@ import { rolesList } from './const/roles.js'
 export default {
   data(){
     return {
+      deathPic: 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5',
+      questionPic: 'https://proofthatblog.com/wp-content/uploads/2013/06/question-mark.jpg',
       messages: null,
       currentMenu: 'register',
       // currentMenu: 'local',
@@ -765,14 +1101,33 @@ export default {
       revealLog: '',
       holywaterLog: [],
 
+
+      actualyPlaying: true,
+      waitingForTheConfirm: true,
+
+
       docLog: '',
       reviveLog: [],
       reservationForMedium: [],
       reservationForPriest: [],
       instantMediumMessage: '',
 
+
       ladyLog: [],
       reservationForLady: [],
+
+      serialLog: [],
+      reservationForSerial: [],
+
+      instantMessage: '',
+      nightLog: [],
+      
+
+
+
+
+
+
 
       limitSolo: 1,
       killSuccess: true,
@@ -1067,6 +1422,17 @@ export default {
             readyFlag = false
           }
           break
+
+        case 'Serial Killer':
+          if(this.currentPlayer.serialTarget === ''){
+            readyFlag  =false
+            break
+          }
+          
+          if(!this.gameData.players[this.currentPlayer.serialTarget].isAlive){
+            readyFlag = false
+          }
+          break
         
         
         // doctor or village just can finish without doing anything
@@ -1220,10 +1586,13 @@ export default {
     victimList(){
       let ladyCount = 0
       let victimList = []
+      let specialIndex = ''
 
       if(this.reservationForLady !== []){
         while(ladyCount < this.reservationForLady.length){
-          if(this.IndexOfAliveWerewolf.includes(this.reservationForLady[ladyCount].target)){
+          specialIndex = this.reservationForLady[ladyCount].target
+          
+          if(this.gameData.players[specialIndex].roll === 'Serial Killer' || this.gameData.players[specialIndex].team === 'Werewolf'){
             victimList.push(this.reservationForLady[ladyCount].actor)
           }
           ladyCount++
@@ -1240,27 +1609,97 @@ export default {
 
     wasPartnerKilled(){
       let ladyCount = 0
+      let tempList = []
+      let specialIndex = 0
 
       if(this.reservationForLady !== []){
         while(ladyCount < this.reservationForLady.length){
-          if(this.reservationForLady[ladyCount].target === this.WerewolfTargetCanditate){
-            return this.reservationForLady[ladyCount].actor
+          specialIndex =this.reservationForLady[ladyCount].target
+
+          if(!this.gameData.players[specialIndex].isAlive){
+            
+            tempList.push(this.reservationForLady[ladyCount].actor)
           }
           ladyCount++
         }
-        return ''
+        return tempList
         
       }else{
         return ''
       }
 
-    }
+    },
+
+    numberOfSerialKiller(){
+      let count = 0
+      let list = this.gameData.players
+      let serialCount = 0
+      while(count < list.length){
+        if(list[count].roll === 'Serial Killer' && list[count].isAlive){
+          serialCount++
+        }
+        count++
+      }
+      return serialCount
+    },
+
+    endgameList(){
+      let count =0
+      let list = this.gameData.players
+      let postList = []
+
+      while(count < list.length){
+        postList.push(list[count])
+
+        count++
+      }
+      return postList
+
+    },
 
 
 
   }, 
 
   methods:{
+    finishTheInput(){
+      if(this.player1 === ''){
+        return 
+      }
+      if(this.player2 === ''){
+        return 
+      }
+      if(this.player3 === ''){
+        return 
+      }
+      if(this.player4 === ''){
+        return 
+      }
+      if(this.player5 === ''){
+        return 
+      }
+      if(this.player6 === ''){
+        return 
+      }
+      if(this.player7 === ''){
+        return 
+      }
+
+      this.currentMenu= 'local'
+      this.username = 'hectoer'
+      this.practice();
+      this.localMenu = 'predemo'
+
+      this.assignRoles()
+      // console.log('howbaboutiub')
+      console.log(this.currentMenu)
+
+
+      this.startGame()
+
+
+
+    },
     refresh(){
 			db.database().ref('messages').on('value', snapshot => {
 				const data = snapshot.val();
@@ -1302,13 +1741,13 @@ export default {
       // this.localMenu = 'predemo'
       this.localMenu = 'role-Village'
       
-      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: '', reveal: '',});
-      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
-      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
-      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
-      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
-      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
-      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',});
+      this.gameData.players.push({name: this.player1, role: '',isAlive: true,team: '', dieWith: '', protecting: '', reveal: '', serialTarget: '', sleepingWith: ''});
+      this.gameData.players.push({name: this.player2, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',  serialTarget: '', sleepingWith: ''});
+      this.gameData.players.push({name: this.player3, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',  serialTarget: '', sleepingWith: ''});
+      this.gameData.players.push({name: this.player4, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',  serialTarget: '', sleepingWith: ''});
+      this.gameData.players.push({name: this.player5, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',  serialTarget: '', sleepingWith: ''});
+      this.gameData.players.push({name: this.player6, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',  serialTarget: '', sleepingWith: ''});
+      this.gameData.players.push({name: this.player7, role: '',isAlive: true,team: '', dieWith: '',protecting: '', reveal: '',  serialTarget: '', sleepingWith: ''});
       // console.log(this.gameData)
 
 
@@ -1493,6 +1932,7 @@ export default {
 
         }else{
           this.gameData.days[Index].currentPlayersIndex++
+          this.waitingForTheConfirm = true
           // if(this.gameData.players[this.currentIndex].team === 'Werewolf'){
           //   // this.selectingPlayer = true
           // }
@@ -1508,6 +1948,7 @@ export default {
             this.executeNightActions()
           }else{
             this.gameData.days[Index].currentPlayersIndex++
+            this.waitingForTheConfirm = true
             // if(this.gameData.players[this.currentIndex].team === 'Werewolf'){
             //   this.selectingPlayer = true
             // }
@@ -1531,6 +1972,7 @@ export default {
         }else{
           this.selectingPlayer = true
           this.gameData.days[Index].currentPlayersIndex++
+          this.waitingForTheConfirm = true
         }
 
         while(!this.gameData.players[this.currentIndex].isAlive){
@@ -1551,6 +1993,7 @@ export default {
             this.gameData.days[Index].currentPlayersIndex++
             Index = this.gameData.days.length-1
             this.selectingPlayer = true
+            this.waitingForTheConfirm = true
           }
           
         }
@@ -1639,80 +2082,19 @@ export default {
       this.WerewolfTargetCanditate = ultimateIndex
 
 
-      // the first condition for. if the werewolf aim at lad rady but she's sleeping with someone elsr
-      if(this.isthatRedLady){
-        this.killSuccess = false
-      }else if(this.docsProtectingList.includes(ultimateIndex)){
-        this.killSuccess = false
-        this.docLog = `Doctor successfully protect [ ${this.gameData.players[ultimateIndex].name} ] from Werewolf team!`
-      }else{
-        this.killSuccess = true
-        this.gameData.players[ultimateIndex].isAlive = false
-        this.gameData.players[ultimateIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-
-        let theAvenger = this.gameData.players[ultimateIndex]
-        let AvenegIndex= theAvenger.dieWith
-
-        let theLoudMouther = this.gameData.players[ultimateIndex]
-        let revealIndex= theAvenger.reveal
-
-
-        // check if red lady's lover died or not
-        if(this.wasPartnerKilled !== ''){
-          let poorIndex = this.wasPartnerKilled
-          this.gameData.players[poorIndex].isAlive = false
-          this.gameData.players[poorIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-          this.ladyLog.push(`${this.gameData.players[poorIndex].name} was killed`)
-
-        }
-
-
-        
-
-
-
-        if(theAvenger.roll === 'Avenger'){
-          if(this.gameData.players[AvenegIndex].isAlive){
-            this.gameData.players[AvenegIndex].isAlive = false
-            this.gameData.players[AvenegIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-            this.avengeLog = ''
-
-            this.avengeLog = `${theAvenger.name} killed ${this.gameData.players[AvenegIndex].name} ( ${this.gameData.players[AvenegIndex].roll} ) just before died.`
-
-          }
-        }else if(theLoudMouther.roll === 'Loudmouth'){
-          this.revealLog = ''
-
-          this.revealLog = `${theLoudMouther.name} told everyone that ${this.gameData.players[revealIndex].name} is ${this.gameData.players[revealIndex].roll} just before died.`
-        }
-      }
-
-
-      // check if that someone she's sleeping with a werewolf or serial killer or not
-      if(this.victimList !== '' ){
-        console.log('there was a vicitim')
-        console.log(this.victimList)
-        
-        this.killSuccess = true
-
-        let victimcCount = 0
-        while(victimcCount < this.victimList.length){
-          this.gameData.players[this.victimList[victimcCount]].isAlive = false
-          this.gameData.players[this.victimList[victimcCount]].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-          
-          this.ladyLog.push(`${this.gameData.players[this.victimList[victimcCount]].name} was killed`)
-          victimcCount++
-        }
-      }
-
-
+      this.attemptMurder('Werewolf', ultimateIndex)
+      console.l
       
-      // set all the targets for the werewolf so it will easy to access later
-      let wolfCount = 0
-      while(wolfCount < this.IndexOfAliveWerewolf.length){
-        this.gameData.players[wolfCount].killTarget = ultimateIndex
-        wolfCount++
+      let sertialCount =0
+      while(sertialCount < this.gameData.players.length){
+        if(this.gameData.players[sertialCount].isAlive && this.gameData.players[sertialCount].roll === 'Serial Killer'){
+          this.attemptMurder('Serial Killer', this.gameData.players[sertialCount].serialTarget)
+        }
+        sertialCount++
       }
+
+      this.redLadyCheck()
+
 
 
       // medium revive if necessary 
@@ -1724,8 +2106,8 @@ export default {
         while(MediumCount < this.reservationForMedium.length){
           theMediumIndex =  this.reservationForMedium[MediumCount]
           this.gameData.players[theMediumIndex].isAlive = true
-          this.reviveLog.push( `Medium revived ${this.gameData.players[theMediumIndex].name} !`)
-          
+          this.nightLog.push( `Medium revived ${this.gameData.players[theMediumIndex].name} !`)
+        
           i =0
           while(i < this.rolesList.Village.length){
             if(this.rolesList.Village[i].name === this.gameData.players[theMediumIndex].roll){
@@ -1738,8 +2120,6 @@ export default {
         }
       }
       this.reservationForMedium = []
-      // console.log('done medium revive part')
-
 
 
       // Priest water if necessary 
@@ -1757,19 +2137,18 @@ export default {
           if(this.gameData.players[thePriestIndex].team === 'Werewolf'){
             this.gameData.players[thePriestIndex].isAlive = false
             this.gameData.players[thePriestIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-            this.holywaterLog.push( `Priest killed ${this.gameData.players[thePriestIndex].name} with holy water!`)
+            this.nightLog.push( `Priest killed ${this.gameData.players[thePriestIndex].name} with holy water!`)
           }else{
             this.gameData.players[theActorIndex].isAlive = false
             this.gameData.players[theActorIndex].imgLink = 'https://scontent.fhio2-1.fna.fbcdn.net/v/t1.0-9/28166944_157511468242164_696203289464668160_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=34aCbjOfiRUAX9nRZwh&_nc_ht=scontent.fhio2-1.fna&oh=4d2f83ad5953e9c225287571460e59f2&oe=606D41C5'
-            this.holywaterLog.push( `Priest died after throwing water ${this.gameData.players[thePriestIndex].name} ( not werewolf)!`)
+            this.nightLog.push( `Priest died after throwing holy water ${this.gameData.players[thePriestIndex].name} (${this.gameData.players[thePriestIndex].roll})!`)
           }
           PriestCount++
         }
       }
       this.reservationForPriest = []
-      // console.log('done medium revive part')
-
       this.reservationForLady = []
+
 
 
 
@@ -1793,6 +2172,8 @@ export default {
         this.gameData.players[count].votingFor = ''
         count++
       }
+
+      this.clearTargets()
 
       
     },
@@ -1894,15 +2275,20 @@ export default {
 
       // Check if the game should go on or not
 
-      if(this.PercentageOfWerewolf > 50){
+      if(this.PercentageOfWerewolf > 50 && this.numberOfSerialKiller === 0){
         this.readyToPlay = false
         
         this.winnerTeam = 'Werewolf'
         alert('The game is over. Werewolf Won')
-      }else if(this.PercentageOfWerewolf === 0){
+      }else if(this.PercentageOfWerewolf === 0 && this.numberOfSerialKiller === 0 ){
         this.readyToPlay = false
         this.winnerTeam = 'Village'
         alert('The game is over. Village Won!')
+      }else if(this.gameData.players.length === this.numberOfSerialKiller){
+        this.readyToPlay = false
+        this.winnerTeam = 'Serial Killer'
+        alert('The game is over. Serial Killer Won!')
+        
       }
   
 
@@ -1988,6 +2374,53 @@ export default {
     },
     localProcess(){
       this.currentMenu = 'local'
+    },
+
+
+    actionTrigger(i){
+      switch(this.currentPlayer.roll){
+        case 'Werewolf':
+          this.clickPrey(i)
+          break;
+
+        case 'Seer':
+          this.clickSeer(i)
+          break;
+        
+        case 'Aura Seer':
+          this.clickSeer(i)
+          break;
+
+        case 'Avenger':
+          this.clickAvenge(i)
+          break;
+
+        case 'Doctor':
+          this.clickDoctor(i)
+          break;
+
+        case 'Medium':
+          this.clickMediium(i)
+          break;
+
+        case 'Priest':
+          this.clickPriest(i)
+          break;
+
+        case 'Loudmouth':
+          this.clickLoud(i)
+          break;
+
+        case 'Red Lady':
+          this.clickLady(i)
+          break;
+
+        case 'Serial Killer':
+          this.clickSerial(i)
+          break;
+        
+
+      }
     },
 
 
@@ -2208,7 +2641,6 @@ export default {
 
       this.selectingPlayer = false
     },
-
     clickLady(i){
       if(!this.selectingPlayer){
         return
@@ -2230,10 +2662,119 @@ export default {
       }
 
       this.reservationForLady.push({actor: this.currentIndex, target: i}); 
+      this.gameData.players[this.currentIndex].sleepingWith = i
       this.instantMediumMessage=  `You are sleeping with ${this.gameData.players[i].name} tonight !`
       
 
       this.selectingPlayer = false
+    },
+
+    clickSerial(i){
+      if(!this.selectingPlayer){
+        return
+      }
+      let targetCanditate = this.gameData.players[i]
+      if(!targetCanditate.isAlive){
+        alert(`Can't choose dead player`)
+        return
+      }
+      if(targetCanditate.name === this.currentPlayer.name){
+        alert(`Can't choose yourself`)
+        return
+      }
+
+
+      let r= confirm(`Is [ ${targetCanditate.name} ] your target?`);
+      if(!r){
+        return;
+      }
+
+      this.reservationForLady.push(i); 
+      this.gameData.players[this.currentIndex].serialTarget = i
+      this.instantMessage=  `You are killing ${this.gameData.players[i].name} tonight !`
+      
+
+      this.selectingPlayer = false
+    },
+
+    attemptMurder(murderTeam,targetIndex){
+
+      // let muder = this.gameData.players[murderIndex]
+      let target = this.gameData.players[targetIndex]
+      
+
+      // 1. check Red Lady check, serrial killer
+      // 2. Doctor check
+      // Kill function 
+      // Avengers or loudmouth
+      // in the end call redladycheck function 
+
+      // 1. Check red lady and serial killer checl
+      if(target.roll === 'Red Lady' && target.sleepingWith !== ''){
+        this.killSuccess = false
+
+      }else if(murderTeam === 'Werewolf'  && target.roll === 'Serial Killer'){
+        // Werewolf cannot kill serial killer and don't have to let anuybody know
+        this.killSuccess = false
+        
+      }else if(this.docsProtectingList.includes(targetIndex)){
+        this.killSuccess = false
+        this.nightLog.push( `Doctor successfully protect [ ${target.name} ] from enemies!`)
+
+      }else{
+        this.killSuccess = true
+        this.gameData.players[targetIndex].isAlive = false
+        this.gameData.players[targetIndex].imgLink = this.deathPic
+        this.nightLog.push(`${target.name} (${target.roll} )was killed last night`)
+
+        let targetsTarget = null
+
+        if(target.roll === 'Avenger'){
+          targetsTarget = target.dieWith
+          if(this.gameData.players[targetsTarget].isAlive){
+            this.gameData.players[targetsTarget].isAlive = false
+            this.nightLog.push(`${target.name} killed ${this.gameData.players[targetsTarget].name} ( ${this.gameData.players[targetsTarget].roll} ) just before died.`)
+          }
+
+        }else if(target.roll === 'Loudmouth'){
+          targetsTarget = target.reveal
+          this.nightLog.push(`${target.name} told everyone that ${this.gameData.players[targetsTarget].name} is ${this.gameData.players[targetsTarget].roll} just before died.`)
+
+        }
+      }
+
+
+    },
+
+    
+    redLadyCheck(){
+      let countCount = 0
+      let list = this.gameData.players
+      let target = null
+      while(countCount < this.gameData.players.length){
+        target = list[countCount].sleepingWith
+        if(target !== ''){
+            if((list[countCount].roll === 'Red Lady') && (!list[target].isAlive || list[target].team === 'Werewolf' || list[target].roll === 'Serial Killer')   ){
+            this.gameData.players[countCount].isAlive = false
+            this.gameData.players[countCount].imgLink = this.deathPic
+            this.nightLog.push(`${list[countCount].name } (Red Lady) was killed`)
+
+          }
+        }
+      
+        
+        countCount++
+      
+      }
+    },
+    clearTargets(){
+      let count = 0;
+      while (count < this.gameData.players.length){
+        this.gameData.players[count].sleepingWith = ''
+        this.gameData.players[count].serialTarget = ''
+        this.gameData.players[count].protecting = ''
+        count++
+      }
     },
 
 
