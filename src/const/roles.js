@@ -6,7 +6,7 @@ export const  rolesList = {
 // rolesList.Werewolf.push({name: '',  imgLink: ''});
 
 
-rolesList.Village.push({name: 'Villager', avialblity: true, amountOfAbility: 100,  imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/5/58/Villager.png/revision/latest/scale-to-width-down/620?cb=20190629192110'});
+rolesList.Village.push({name: 'Villager', avialblity: true, amountOfAbility: 100,  imgLink: 'https://toppng.com/uploads/preview/original-file-minecraft-villager-115630082481lnuqjyhex.png'});
 rolesList.Village.push({name: 'Seer', avialblity: true,  amountOfAbility: 100, imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/e/ee/Seer.png/revision/latest/scale-to-width-down/620?cb=20190703173445'});
 rolesList.Village.push({name: 'Aura Seer', avialblity: true, amountOfAbility: 100,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/2/2b/Aura_Seer.png/revision/latest/scale-to-width-down/620?cb=20190630081625'});
 rolesList.Village.push({name: 'Doctor', avialblity: true, amountOfAbility: 100,imgLink: 'https://static.wikia.nocookie.net/werewolf-online/images/6/6c/Doctor.png/revision/latest/scale-to-width-down/307?cb=20200406140632'});
